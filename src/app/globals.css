@@ -514,3 +514,50 @@ button:focus-visible, a:focus-visible { outline: 2px solid #b4d4be; outline-offs
   .status-card, .moves-card, .sidebar-footnote { grid-column: auto; }
   .page-footer { flex-direction: column; gap: 6px; }
 }
+
+
+/* ChessBox platform navigation and feature panels */
+.topbar-nav { gap: 4px; }
+.nav-tab { height:100%; padding:0 14px; border:0; border-bottom:2px solid transparent; background:transparent; color:#89969a; cursor:pointer; font-weight:600; transition:color 140ms ease,border-color 140ms ease; }
+.nav-tab:hover { color:#e7eeea; }
+.nav-tab-active { color:#eef3ef; border-bottom-color:var(--accent); }
+.mode-switch { display:grid; grid-template-columns:1fr 1fr; gap:5px; padding:4px; border:1px solid var(--line); border-radius:6px; background:#151c21; }
+.mode-option { min-height:31px; border:0; border-radius:4px; background:transparent; color:var(--muted); font-size:10px; font-weight:650; cursor:pointer; }
+.mode-active { background:#34443d; color:#e2eee5; }
+.field-label { display:flex; justify-content:space-between; margin:3px 0 -4px; color:#9da9a8; font-size:10px; font-weight:650; }
+.field-label span { color:var(--accent); }
+.field-select,.data-input { width:100%; border:1px solid #3a454d; border-radius:5px; background:#171e23; color:#e5ebe7; font:inherit; font-size:11px; }
+.field-select { min-height:35px; padding:0 9px; }
+.data-input { resize:vertical; padding:9px; line-height:1.45; }
+.skill-slider { width:100%; accent-color:var(--accent); cursor:pointer; }
+.inline-message,.form-message { margin:0; color:var(--accent); font-size:10px; line-height:1.5; }
+.engine-footnote { display:flex; align-items:flex-start; gap:9px; padding:3px 4px; color:var(--subtle); }
+.engine-footnote p { margin:0; font-size:10px; line-height:1.5; }
+.engine-dot-off { width:6px; height:6px; margin-top:4px; flex:0 0 auto; border-radius:50%; background:#b48a78; }
+.puzzle-title { margin-top:13px; color:#edf1ed; font-size:19px; font-weight:700; letter-spacing:-.5px; }
+.puzzle-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+.puzzle-tags span { padding:4px 7px; border:1px solid #3a474d; border-radius:4px; color:#aab9b1; font-size:9px; }
+.puzzle-prompt { margin:14px 0 0; color:#d6dfda; font-size:12px; line-height:1.5; }
+.puzzle-explanation { margin:10px 0 0; padding-top:10px; border-top:1px solid var(--line); color:var(--accent-strong); font-size:11px; line-height:1.55; }
+.pv-line { margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
+.pv-line span { color:var(--subtle); font-size:9px; font-weight:750; letter-spacing:1px; }
+.pv-line p { margin:7px 0 0; color:#cad8ce; font-size:11px; line-height:1.55; }
+.analysis-button { margin-top:15px; }
+.learning-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.opening-card { min-width:0; padding:19px; border:1px solid var(--line); border-radius:7px; background:var(--surface); }
+.opening-meta { display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px; color:var(--subtle); font-size:9px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
+.opening-card h2 { margin:15px 0 10px; color:#edf1ed; font-size:19px; letter-spacing:-.5px; }
+.opening-line { overflow-x:auto; padding:10px; border:1px solid #343f46; border-radius:4px; background:#151c21; color:#c9d7ce; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px; white-space:nowrap; }
+.opening-card p { min-height:54px; margin:12px 0 15px; color:var(--muted); font-size:11px; line-height:1.6; }
+.learning-note { grid-column:1/-1; display:flex; align-items:flex-start; gap:9px; padding:3px; color:var(--subtle); }
+.learning-note p { margin:0; font-size:10px; line-height:1.6; }
+.board-square:disabled { cursor:default; }
+@media (max-width:700px) {
+ .topbar { height:auto; min-height:60px; flex-wrap:wrap; row-gap:0; }
+ .topbar-nav { order:3; width:100%; height:42px; margin:0; overflow-x:auto; }
+ .nav-tab { padding:0 12px; font-size:11px; }
+ .github-link { margin-left:auto; }
+ .learning-grid { grid-template-columns:1fr; }
+ .learning-note { grid-column:auto; }
+}
+@media (max-width:420px) { .nav-tab { padding:0 9px; } .opening-card { padding:15px; } }
