@@ -1099,3 +1099,286 @@ body { background: #111315; color: #eef0f2; }
     height: 91%;
   }
 }
+
+
+/* ── Responsive layout normalization ─────────────────────────────── */
+.app-main,
+.dashboard-content,
+.dashboard-primary,
+.dashboard-rail,
+.match-content,
+.match-stage,
+.match-board-wrap,
+.match-sidebar,
+.study-content,
+.study-layout,
+.study-board-panel,
+.study-sidebar {
+  min-width: 0;
+}
+
+.dashboard-content {
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) clamp(280px, 27vw, 380px);
+  gap: clamp(16px, 1.8vw, 26px);
+  padding-inline: clamp(16px, 2.3vw, 38px);
+}
+
+.dashboard-topbar {
+  padding-inline: clamp(16px, 2.3vw, 38px);
+}
+
+.hero-banner,
+.daily-puzzle-card,
+.dashboard-card,
+.quick-play-card,
+.opening-card,
+.study-card {
+  min-width: 0;
+}
+
+.hero-copy { max-width: 100%; }
+.daily-puzzle-copy { flex: 1 1 auto; }
+
+.match-content {
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, clamp(320px, 29vw, 410px));
+  gap: clamp(16px, 2vw, 32px);
+  padding-inline: clamp(14px, 2.3vw, 38px);
+  align-items: start;
+}
+
+.match-stage { width: 100%; }
+.match-stage-heading,
+.match-board-wrap {
+  width: min(100%, 810px, calc(100svh - 300px));
+}
+.match-board-wrap { margin-inline: auto; }
+.match-board-frame,
+.match-board-frame .board-grid {
+  width: 100%;
+  height: 100%;
+}
+.match-board-frame {
+  aspect-ratio: 1 / 1;
+  max-width: none;
+}
+.match-board-frame .board-grid {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+}
+.match-sidebar { width: 100%; }
+.match-tab-content { min-width: 0; }
+.match-move-row { grid-template-columns: 38px minmax(0, 1fr) minmax(0, 1fr); }
+
+.study-content,
+.learn-page {
+  width: 100%;
+  max-width: 1440px;
+  padding-inline: clamp(14px, 2.3vw, 38px);
+}
+.study-layout {
+  width: 100%;
+  grid-template-columns: minmax(0, 760px) minmax(280px, 360px);
+  gap: clamp(14px, 2vw, 24px);
+}
+.study-board-panel { min-width: 0; }
+.study-board-panel .board-frame,
+.study-board-panel .board-grid {
+  width: 100%;
+  height: 100%;
+}
+.study-board-panel .board-grid {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+}
+
+@media (max-width: 1240px) {
+  .match-content {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  .match-stage { order: 1; }
+  .match-sidebar { order: 2; }
+  .match-board-wrap {
+    width: min(100%, 760px, calc(100svh - 280px));
+  }
+  .match-sidebar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+  }
+  .match-tabs,
+  .match-tab-content { grid-column: 1 / -1; }
+  .match-sidebar-bottom { margin-top: 0; }
+  .study-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(270px, 340px);
+  }
+}
+
+@media (max-width: 1080px) {
+  .dashboard-content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dashboard-rail {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .match-sidebar { display: flex; }
+  .study-layout { grid-template-columns: minmax(0, 1fr); }
+  .study-board-panel { width: min(100%, 760px); margin-inline: auto; }
+  .study-sidebar {
+    width: min(100%, 760px);
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .dashboard-content { padding-inline: 12px; gap: 20px; }
+  .dashboard-topbar { padding-inline: 12px; }
+  .match-content { padding-inline: 10px; }
+  .match-stage-heading,
+  .match-board-wrap { width: 100%; }
+  .match-board-wrap { max-width: min(100%, calc(100vw - 20px)); }
+  .match-board-frame { width: 100%; }
+  .match-sidebar { width: 100%; }
+  .match-tabs { min-height: 52px; }
+  .study-content,
+  .learn-page { padding-inline: 12px; }
+  .study-board-panel { width: 100%; padding: 8px; }
+  .study-board-panel .board-frame { width: 100%; }
+  .study-board-panel .match-player { min-height: 46px; }
+}
+
+@media (max-width: 420px) {
+  .dashboard-rail { grid-template-columns: minmax(0, 1fr); }
+  .daily-puzzle-card { gap: 10px; }
+  .match-clock { min-width: 82px; }
+  .match-board-controls { gap: 4px; }
+  .match-board-controls button { min-width: 0; }
+}
+
+/* ── Motion language ─────────────────────────────────────────────── */
+@keyframes cb-page-enter {
+  from { opacity: 0; transform: translateY(9px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes cb-piece-land {
+  0% { opacity: .55; transform: translateY(-5px) scale(.9); }
+  75% { opacity: 1; transform: translateY(1px) scale(1.025); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes cb-modal-enter {
+  from { opacity: 0; transform: translateY(10px) scale(.975); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes cb-hero-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-7px) rotate(-1deg); }
+}
+@keyframes cb-target-pulse {
+  0%, 100% { opacity: .72; transform: scale(.92); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+@keyframes cb-soft-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(235, 238, 242, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(235, 238, 242, .045); }
+}
+
+.dashboard-content,
+.match-content,
+.study-content,
+.learn-page,
+.coming-soon-page {
+  animation: cb-page-enter 260ms cubic-bezier(.2,.7,.2,1) both;
+}
+
+.sidebar-nav-item,
+.quick-play-card,
+.dashboard-card,
+.opening-card,
+.study-card,
+.daily-puzzle-card,
+.learn-strip,
+.match-tabs,
+.match-tab-content,
+.match-sidebar-bottom,
+.hero-cta,
+.primary-button,
+.secondary-button,
+.puzzle-solve-button,
+.match-board-controls button,
+.study-back-button {
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 180ms ease,
+    transform 180ms cubic-bezier(.2,.7,.2,1);
+}
+
+.sidebar-nav-item:hover,
+.quick-play-card:hover,
+.dashboard-card:hover,
+.opening-card:hover,
+.study-card:hover,
+.daily-puzzle-card:hover,
+.learn-strip:hover {
+  transform: translateY(-2px);
+  border-color: #454a52;
+}
+
+.sidebar-nav-item:active,
+.quick-play-card:active,
+.hero-cta:active,
+.primary-button:active,
+.secondary-button:active,
+.puzzle-solve-button:active,
+.match-board-controls button:active {
+  transform: scale(.975);
+}
+
+.hero-knight-piece { animation: cb-hero-float 8s ease-in-out infinite; }
+.hero-banner { isolation: isolate; }
+.hero-cta:hover { box-shadow: 0 5px 18px rgba(230,233,238,.12); }
+.global-search { transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease; }
+.global-search:focus-within { border-color: #555b64; background: #1d2024; box-shadow: 0 0 0 3px rgba(210,216,225,.055); }
+
+.board-square {
+  transition:
+    background-color 130ms ease,
+    filter 130ms ease;
+}
+.board-square:active { filter: brightness(1.12); }
+.chess-piece { animation: cb-piece-land 170ms cubic-bezier(.2,.75,.25,1) both; }
+.drag-ghost .chess-piece { animation: none; }
+.move-indicator { animation: cb-target-pulse 1.5s ease-in-out infinite; }
+.move-capture { animation: cb-soft-pulse 1.8s ease-in-out infinite; }
+
+.match-tab::after { transition: left 170ms ease, right 170ms ease, background-color 170ms ease; }
+.match-tab-content { animation: cb-page-enter 180ms ease both; }
+.match-move-row { animation: cb-page-enter 180ms ease both; }
+.promotion-backdrop { animation: cb-page-enter 140ms ease both; }
+.promotion-dialog { animation: cb-modal-enter 200ms cubic-bezier(.2,.8,.2,1) both; }
+.toast-message { animation: cb-modal-enter 180ms ease both; }
+.match-clock-active { transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease; }
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #bfc8d3;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
