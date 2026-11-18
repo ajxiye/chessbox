@@ -2,32 +2,34 @@
 
 **An Open Source Chess Website.**
 
-ChessBox is a modern chess platform project focused on a calm, clear playing experience. The repository currently contains the first playable local chessboard experience. It is the foundation for the wider platform, not a finished Chess.com or Lichess replacement.
+ChessBox is a free, open-source chess playground designed to grow into a full chess platform. It runs as a static site on GitHub Pages, with game rules and the chess engine running in the visitor's browser.
 
-## Current features
+## Playable features
 
-- Legal chess moves and game-state rules powered by [chess.js](https://github.com/jhlywa/chess.js)
-- Click-to-select and click-to-move
-- Drag-and-drop with pointer support for mouse, pen, and touch
-- Legal move and capture indicators
-- Check, checkmate, stalemate, and draw status
-- Pawn promotion choices (queen, rook, bishop, or knight)
-- Move list, undo, new game, board flip, and FEN copy
-- Responsive dark interface
+- **Play vs Stockfish:** adjustable engine strength, choose White or Black, local WebAssembly engine
+- **Local two-player:** pass-and-play on one device
+- **Legal chess:** moves, castling, en passant, promotion, check, checkmate and draw detection through chess.js
+- **Board interaction:** click-to-move, drag-and-drop, legal move dots, capture indicators, last-move highlights and board flipping
+- **Move tools:** undo, move history, FEN copy, PGN copy, FEN import and PGN import
+- **Analysis:** Stockfish principal variation and evaluation for the current position
+- **Puzzles:** original mate-in-one exercises
+- **Learn:** introductory lines for the Italian Game, Ruy Lopez, Queen's Gambit and London System
 
-## Stack
+## What is not online yet
 
-- [Next.js](https://nextjs.org/) App Router
-- React and TypeScript
-- [chess.js](https://github.com/jhlywa/chess.js) for chess rules and move validation
-- CSS, without a utility-CSS framework
+GitHub Pages serves static files. It cannot run the trusted server required for accounts, real-time matchmaking, ratings, chat, cloud game storage, or anti-cheat. Those features are not faked or simulated in this build. They need a separate backend and a clear hosting/privacy plan. Local games, puzzles and engine analysis work without an account.
 
-## Requirements
+## Tech
 
-- Node.js 20.9 or newer
-- npm
+- Next.js App Router with static export
+- React + TypeScript
+- chess.js for chess rules
+- Stockfish.js 19 lite single-threaded WebAssembly for computer play and analysis
+- Plain CSS and Figtree
 
 ## Run locally
+
+Requirements: Node.js 20.9+ and npm.
 
 ```bash
 git clone https://github.com/ajxiye/chessbox.git
@@ -36,47 +38,26 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open http://localhost:3000.
 
-## Useful commands
+The install/build scripts copy the Stockfish browser worker and WebAssembly file from the npm package into `public/engine`.
 
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start the development server |
-| `npm run build` | Create a production build |
-| `npm run start` | Run the production build |
-| `npm run lint` | Run ESLint |
-| `npm run typecheck` | Check TypeScript types |
+## Build for GitHub Pages
 
-## Project structure
-
-```text
-chessbox/
-├── public/
-│   └── chessbox-mark.svg
-├── src/
-│   ├── app/
-│   │   ├── globals.css
-│   │   ├── layout.tsx
-│   │   └── page.tsx
-│   └── components/
-│       ├── chess-game.tsx
-│       └── chess-piece.tsx
-├── .gitignore
-├── eslint.config.mjs
-├── next-env.d.ts
-├── package.json
-└── tsconfig.json
+```bash
+GITHUB_PAGES=true npm run build
 ```
 
-## Roadmap
+The static website is generated in `out/`. The included GitHub Actions workflow builds and deploys the site to:
 
-The first milestone is a reliable board and local game experience. Future work can build on it with accounts, online matchmaking, puzzles, analysis, saved games, and accessibility improvements.
+`https://ajxiye.github.io/chessbox/`
 
-## Contributing
-
-Issues and pull requests are welcome. Please keep changes focused, explain the behaviour being changed, and run the lint and type-check commands before opening a pull request.
+Every push to `main` triggers a new deployment. In GitHub, set **Settings → Pages → Build and deployment → Source → GitHub Actions** if it is not already selected.
 
 ## License
 
-A license has not been selected yet. Until a `LICENSE` file is added, the source is publicly viewable but is not explicitly licensed for reuse or redistribution.
+ChessBox's original code is licensed under the MIT License. Third-party components keep their own licences. Stockfish.js is GPL-3.0; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the notice generated beside the engine assets.
+
+## Contributing
+
+Issues and pull requests are welcome. Please run `npm run typecheck`, `npm run lint`, and `npm run build` before opening a pull request.
