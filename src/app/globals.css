@@ -1009,3 +1009,93 @@ body { background: #111315; color: #eef0f2; }
   .match-mode-pill { font-size: 7px; }
   .match-breadcrumb { font-size: 8px; }
 }
+
+
+/* Chessboard geometry: the board is one square, built from 64 equal cells.
+   Explicit rows are important: implicit auto rows can produce uneven squares. */
+.board-frame {
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  flex: 0 0 auto;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.board-grid {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  overflow: hidden;
+}
+.board-square {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+.chess-piece {
+  width: 90%;
+  height: 90%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.match-board-wrap {
+  width: min(100%, 810px, calc(100svh - 300px));
+  min-width: 0;
+  margin-inline: auto;
+}
+.match-board-frame {
+  width: 100%;
+  max-width: none;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  flex: 0 0 auto;
+}
+.match-board-frame .board-grid {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+.match-board-frame .chess-piece {
+  width: 90%;
+  height: 90%;
+  filter: none;
+}
+.study-board-panel .board-frame {
+  width: 100%;
+  max-width: 100%;
+}
+.study-board-panel .board-grid {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+.match-board-frame .board-square,
+.study-board-panel .board-square {
+  aspect-ratio: 1 / 1;
+}
+
+@media (max-width: 700px) {
+  .match-board-wrap {
+    width: min(100%, calc(100vw - 24px));
+  }
+  .match-board-frame .chess-piece,
+  .study-board-panel .chess-piece {
+    width: 91%;
+    height: 91%;
+  }
+}
