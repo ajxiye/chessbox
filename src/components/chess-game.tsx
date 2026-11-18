@@ -584,13 +584,13 @@ export function ChessPlatform() {
                           onPointerCancel={clearSelection} onContextMenu={(event)=>event.preventDefault()}>
                           {columnIndex===0 && <span className="rank-coordinate">{rank}</span>}
                           {rowIndex===7 && <span className="file-coordinate">{file}</span>}
-                          {piece && !isDragged && <ChessPiece type={piece.type} color={piece.color}/>}
+                          {piece && !isDragged && <ChessPiece key={square + piece.color + piece.type} type={piece.type} color={piece.color}/>}
                           {legal && <span className={capture?"move-indicator move-capture":"move-indicator"}/>}
                         </button>
                       );
                     }))}
                   </div>
-                  {drag && (() => { const piece=game.get(drag.from); return piece ? <div className="drag-ghost" style={{left:drag.x,top:drag.y}}><ChessPiece type={piece.type} color={piece.color}/></div> : null; })()}
+                  {drag && (() => { const piece=game.get(drag.from); return piece ? <div className="drag-ghost" style={{left:drag.x,top:drag.y}}><ChessPiece key={square + piece.color + piece.type} type={piece.type} color={piece.color}/></div> : null; })()}
                 </div>
                 {renderPlayer(orientation === "w" ? "w" : "b")}
                 <div className="match-board-controls">
@@ -679,7 +679,7 @@ export function ChessPlatform() {
                           onPointerUp={handlePointerUp} onPointerCancel={clearSelection}>
                           {columnIndex===0 && <span className="rank-coordinate">{rank}</span>}
                           {rowIndex===7 && <span className="file-coordinate">{file}</span>}
-                          {piece && <ChessPiece type={piece.type} color={piece.color}/>}
+                          {piece && <ChessPiece key={square + piece.color + piece.type} type={piece.type} color={piece.color}/>}
                           {legal && <span className={capture?"move-indicator move-capture":"move-indicator"}/>}
                         </button>
                       );
