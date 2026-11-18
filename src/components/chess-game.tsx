@@ -31,7 +31,13 @@ const PUZZLES = [
     explanation: "The queen uses the open diagonal to reach h4. White's f-pawn has moved, leaving the king exposed.",
   },
 ];
-const PROMOTION_OPTIONS: { type: PieceSymbol; label: string }[] = [\n  { type: "q", label: "Queen" },\n  { type: "r", label: "Rook" },\n  { type: "b", label: "Bishop" },\n  { type: "n", label: "Knight" },\n];\nconst OPENINGS = [
+const PROMOTION_OPTIONS: { type: PieceSymbol; label: string }[] = [
+  { type: "q", label: "Queen" },
+  { type: "r", label: "Rook" },
+  { type: "b", label: "Bishop" },
+  { type: "n", label: "Knight" },
+];
+const OPENINGS = [
   { name:"Italian Game", eco:"C50–C54", style:"Open game · quick development", moves:"1. e4 e5 2. Nf3 Nc6 3. Bc4", pgn:"1. e4 e5 2. Nf3 Nc6 3. Bc4", note:"Develop the bishop actively and put pressure on f7. A natural opening that teaches development and central control." },
   { name:"Ruy Lopez", eco:"C60–C99", style:"Open game · long-term pressure", moves:"1. e4 e5 2. Nf3 Nc6 3. Bb5", pgn:"1. e4 e5 2. Nf3 Nc6 3. Bb5", note:"The bishop pressures the knight that supports e5. The position often becomes a strategic battle over the centre." },
   { name:"Queen's Gambit", eco:"D06–D69", style:"Closed game · central tension", moves:"1. d4 d5 2. c4", pgn:"1. d4 d5 2. c4", note:"White offers the c-pawn to challenge Black's central pawn on d5. It is a strategic idea, not a simple pawn sacrifice." },
