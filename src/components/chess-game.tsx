@@ -590,7 +590,7 @@ export function ChessPlatform() {
                       );
                     }))}
                   </div>
-                  {drag && (() => { const piece=game.get(drag.from); return piece ? <div className="drag-ghost" style={{left:drag.x,top:drag.y}}><ChessPiece key={square + piece.color + piece.type} type={piece.type} color={piece.color}/></div> : null; })()}
+                  {drag && (() => { const piece=game.get(drag.from); return piece ? <div className="drag-ghost" style={{left:drag.x,top:drag.y}}><ChessPiece key={drag.from + piece.color + piece.type} type={piece.type} color={piece.color}/></div> : null; })()}
                 </div>
                 {renderPlayer(orientation === "w" ? "w" : "b")}
                 <div className="match-board-controls">
