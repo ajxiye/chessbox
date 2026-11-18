@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Chess, type Color, type Move, type PieceSymbol, type Square } from "chess.js";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { ChessPiece } from "@/components/chess-piece";
@@ -33,7 +33,7 @@ function sideName(color: Color) {
 }
 
 export function ChessGame() {
-  const gameRef = useRef(new Chess());
+  const [game, setGame] = useState(() => new Chess());
   const [, setRevision] = useState(0);
   const [orientation, setOrientation] = useState<BoardOrientation>("w");
   const [selected, setSelected] = useState<Square | null>(null);
@@ -43,15 +43,9 @@ export function ChessGame() {
   const suppressClickRef = useRef(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
 
-  const game = gameRef.current;
   const history = game.history({ verbose: true });
   const lastMove = history.length ? history[history.length - 1] : null;
-  const legalMoves = useMemo(
-    () => selected ? game.moves({ square: selected, verbose: true }) as Move[] : [],
-    // The revision is the intentional signal that the chess.js instance changed.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selected, game, history.length, game.fen()],
-  );
+  const legalMoves = selected ? game.moves({ square: selected, verbose: true }) as Move[] : [];
   const legalTargets = new Set(legalMoves.map((move) => move.to));
   const captureTargets = new Set(
     legalMoves.filter((move) => move.captured || move.isEnPassant()).map((move) => move.to),
@@ -199,7 +193,7 @@ export function ChessGame() {
   }
 
   function newGame() {
-    gameRef.current = new Chess();
+    setGame(new Chess());
     setSelected(null);
     setPromotion(null);
     setDrag(null);
@@ -252,7 +246,7 @@ export function ChessGame() {
               files.map((file, columnIndex) => {
                 const square = (file + rank) as Square;
                 const piece = game.get(square);
-                const isLight = (files.indexOf(file) + rank) % 2 === 0;
+                const isLight = (file.charCodeAt(0) - 97 + rank) % 2 === 0;
                 const isLastMove = lastMove?.from === square || lastMove?.to === square;
                 const isLegal = legalTargets.has(square);
                 const isCapture = captureTargets.has(square);
