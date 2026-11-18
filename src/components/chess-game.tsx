@@ -55,7 +55,8 @@ function parseUci(value: string) {
 }
 
 export function ChessPlatform() {
-  const gameRef = useRef(new Chess());
+  const [game, setGame] = useState(() => new Chess());
+  const gameRef = useRef(game);
   const workerRef = useRef<Worker | null>(null);
   const taskRef = useRef<Task>(null);
   const requestedFenRef = useRef("");
@@ -85,7 +86,6 @@ export function ChessPlatform() {
   const [puzzleSolved, setPuzzleSolved] = useState(false);
   const [puzzleMessage, setPuzzleMessage] = useState("Find the best move.");
 
-  const game = gameRef.current;
   const history = game.history({ verbose: true });
   const lastMove = history.length ? history[history.length - 1] : null;
   const gameOver = game.isGameOver();
@@ -98,7 +98,7 @@ export function ChessPlatform() {
 
   useEffect(() => {
     if (typeof Worker === "undefined") {
-      setEngineError("This browser does not support Web Workers.");
+      window.setTimeout(() => setEngineError("This browser does not support Web Workers."), 0);
       return;
     }
     let worker: Worker;
@@ -171,7 +171,7 @@ export function ChessPlatform() {
     workerRef.current.postMessage("setoption name Skill Level value " + skill);
     workerRef.current.postMessage("position fen " + fen);
     workerRef.current.postMessage("go movetime 850");
-  }, [screen, mode, humanColor, skill, engineReady, revision]);
+  }, [screen, mode, humanColor, skill, engineReady, revision, game]);
 
   const statusTitle = game.isCheckmate() ? sideName(game.turn() === "w" ? "b" : "w") + " wins" : game.isDraw() ? "Draw" : sideName(game.turn()) + " to move";
   const statusDetail = game.isCheckmate() ? "Checkmate" : game.isStalemate() ? "Stalemate" :
@@ -261,7 +261,9 @@ export function ChessPlatform() {
 
   function startNewGame() {
     stopEngineTask();
-    gameRef.current = new Chess();
+    const nextGame = new Chess();
+    gameRef.current = nextGame;
+    setGame(nextGame);
     setScreen("play"); setSelected(null); setPromotion(null); setPuzzleSolved(false); setAnalysis(null); setCopyMessage("");
     refresh();
   }
@@ -275,7 +277,9 @@ export function ChessPlatform() {
     const safeIndex = (index + PUZZLES.length) % PUZZLES.length;
     const puzzle = PUZZLES[safeIndex];
     stopEngineTask();
-    gameRef.current = new Chess(puzzle.fen);
+    const nextGame = new Chess(puzzle.fen);
+    gameRef.current = nextGame;
+    setGame(nextGame);
     setPuzzleIndex(safeIndex); setPuzzleSolved(false);
     setPuzzleMessage("Find the best move. " + puzzle.theme + ".");
     setOrientation(puzzle.fen.split(" ")[1] === "b" ? "b" : "w");
@@ -284,13 +288,13 @@ export function ChessPlatform() {
   function openScreen(next: Screen) {
     stopEngineTask(); clearSelection(); setScreen(next);
     if (next === "puzzles") loadPuzzle(puzzleIndex);
-    if (next === "play" && gameRef.current.isGameOver()) startNewGame();
+    if (next === "play" && game.isGameOver()) startNewGame();
   }
   function loadOpening(pgn: string) {
     try {
       const openingGame = new Chess();
       openingGame.loadPgn(pgn);
-      stopEngineTask(); gameRef.current=openingGame;
+      stopEngineTask(); gameRef.current=openingGame; setGame(openingGame);
       setScreen("play"); setMode("local"); setOrientation("w"); clearSelection(); setAnalysis(null); refresh();
     } catch { setDataMessage("That opening line could not be loaded."); }
   }
@@ -310,14 +314,14 @@ export function ChessPlatform() {
   function loadFen() {
     try {
       const next = new Chess(fenInput.trim());
-      stopEngineTask(); gameRef.current=next; setScreen("analysis"); setMode("local");
+      stopEngineTask(); gameRef.current=next; setGame(next); setScreen("analysis"); setMode("local");
       clearSelection(); setAnalysis(null); setDataMessage("Position loaded successfully."); refresh();
     } catch { setDataMessage("That FEN is invalid. Check the position and try again."); }
   }
   function loadPgn() {
     try {
       const next = new Chess(); next.loadPgn(pgnInput.trim());
-      stopEngineTask(); gameRef.current=next; setScreen("analysis"); setMode("local");
+      stopEngineTask(); gameRef.current=next; setGame(next); setScreen("analysis"); setMode("local");
       clearSelection(); setAnalysis(null); setDataMessage("PGN loaded successfully."); refresh();
     } catch { setDataMessage("That PGN could not be read. Check its move notation."); }
   }
