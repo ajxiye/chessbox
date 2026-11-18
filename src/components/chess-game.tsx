@@ -177,7 +177,7 @@ export function ChessPlatform() {
 
   useEffect(() => {
     if (screen !== "play" || mode !== "computer" || game.turn() === humanColor ||
-        game.isGameOver() || !engineReady || !workerRef.current || taskRef.current) return;
+        gameOver || !engineReady || !workerRef.current || taskRef.current) return;
     const fen = game.fen();
     requestedFenRef.current = fen;
     taskRef.current = "move";
@@ -314,7 +314,7 @@ export function ChessPlatform() {
     try {
       const openingGame = new Chess();
       openingGame.loadPgn(pgn);
-      stopEngineTask(); gameRef.current=openingGame; setGame(openingGame);
+      stopEngineTask(); gameRef.current=openingGame; setGame(openingGame); setClockEnabled(false);
       setScreen("play"); setMode("local"); setOrientation("w"); clearSelection(); setAnalysis(null); refresh();
     } catch { setDataMessage("That opening line could not be loaded."); }
   }
@@ -366,7 +366,7 @@ export function ChessPlatform() {
     return String(minutes) + ":" + String(remaining).padStart(2, "0");
   }
 
-  function renderPlayer(color: Color, place: "top" | "bottom") {
+  function renderPlayer(color: Color) {
     const active = game.turn() === color && !gameOver;
     const name = mode === "computer" ? color === humanColor ? "You" : "Stockfish" : sideName(color);
     const rating = mode === "computer" ? color === humanColor ? "Guest player" : "Browser engine" : "Local player";
@@ -559,7 +559,7 @@ export function ChessPlatform() {
                 <span className="match-mode-pill">{mode === "computer" ? "VS STOCKFISH" : "TWO PLAYERS · LOCAL"}</span>
               </div>
               <div className="match-board-wrap">
-                {renderPlayer(orientation === "w" ? "b" : "w", "top")}
+                {renderPlayer(orientation === "w" ? "b" : "w")}
                 <div className="board-frame match-board-frame">
                   <div className="board-grid" role="group" aria-label="Chessboard">
                     {ranks.map((rank,rowIndex) => files.map((file,columnIndex) => {
@@ -592,7 +592,7 @@ export function ChessPlatform() {
                   </div>
                   {drag && (() => { const piece=game.get(drag.from); return piece ? <div className="drag-ghost" style={{left:drag.x,top:drag.y}}><ChessPiece type={piece.type} color={piece.color}/></div> : null; })()}
                 </div>
-                {renderPlayer(orientation === "w" ? "w" : "b", "bottom")}
+                {renderPlayer(orientation === "w" ? "w" : "b")}
                 <div className="match-board-controls">
                   <button type="button" onClick={undoMove} disabled={history.length===0} aria-label="Undo move" title="Undo move">↶</button>
                   <button type="button" onClick={() => startNewGame(mode, timeControlSeconds)} aria-label="New game" title="New game">↻</button>
@@ -659,7 +659,7 @@ export function ChessPlatform() {
             </section>
             <div className="study-layout">
               <div className="board-panel study-board-panel">
-                {renderPlayer(orientation === "w" ? "b" : "w", "top")}
+                {renderPlayer(orientation === "w" ? "b" : "w")}
                 <div className="board-frame">
                   <div className="board-grid" role="group" aria-label="Chessboard">
                     {ranks.map((rank,rowIndex) => files.map((file,columnIndex) => {
@@ -686,7 +686,7 @@ export function ChessPlatform() {
                     }))}
                   </div>
                 </div>
-                {renderPlayer(orientation === "w" ? "w" : "b", "bottom")}
+                {renderPlayer(orientation === "w" ? "w" : "b")}
               </div>
               <aside className="study-sidebar">
                 {screen==="puzzles" ? <>
