@@ -31,7 +31,7 @@ const PUZZLES = [
     explanation: "The queen uses the open diagonal to reach h4. White's f-pawn has moved, leaving the king exposed.",
   },
 ];
-const OPENINGS = [
+const PROMOTION_OPTIONS: { type: PieceSymbol; label: string }[] = [\n  { type: "q", label: "Queen" },\n  { type: "r", label: "Rook" },\n  { type: "b", label: "Bishop" },\n  { type: "n", label: "Knight" },\n];\nconst OPENINGS = [
   { name:"Italian Game", eco:"C50–C54", style:"Open game · quick development", moves:"1. e4 e5 2. Nf3 Nc6 3. Bc4", pgn:"1. e4 e5 2. Nf3 Nc6 3. Bc4", note:"Develop the bishop actively and put pressure on f7. A natural opening that teaches development and central control." },
   { name:"Ruy Lopez", eco:"C60–C99", style:"Open game · long-term pressure", moves:"1. e4 e5 2. Nf3 Nc6 3. Bb5", pgn:"1. e4 e5 2. Nf3 Nc6 3. Bb5", note:"The bishop pressures the knight that supports e5. The position often becomes a strategic battle over the centre." },
   { name:"Queen's Gambit", eco:"D06–D69", style:"Closed game · central tension", moves:"1. d4 d5 2. c4", pgn:"1. d4 d5 2. c4", note:"White offers the c-pawn to challenge Black's central pawn on d5. It is a strategic idea, not a simple pawn sacrifice." },
@@ -500,7 +500,7 @@ export function ChessPlatform() {
       {promotion && <div className="promotion-backdrop" role="presentation" onClick={()=>setPromotion(null)}>
         <div className="promotion-dialog" role="dialog" aria-modal="true" aria-labelledby="promotion-title" onClick={event=>event.stopPropagation()}>
           <div className="sidebar-section-label">PAWN PROMOTION</div><h2 id="promotion-title">Choose a piece</h2><p>Your pawn reached the final rank.</p>
-          <div className="promotion-options">{(["q","r","b","n"] as PieceSymbol[]).map(type=><button className="promotion-option" key={type} type="button" onClick={()=>commitMove(promotion.from,promotion.to,type)}><ChessPiece type={type} color={promotion.color}/><span>{({q:"Queen",r:"Rook",b:"Bishop",n:"Knight"})[type]}</span></button>)}</div>
+          <div className="promotion-options">{PROMOTION_OPTIONS.map(option=><button className="promotion-option" key={option.type} type="button" onClick={()=>commitMove(promotion.from,promotion.to,option.type)}><ChessPiece type={option.type} color={promotion.color}/><span>{option.label}</span></button>)}</div>
           <button className="text-button promotion-cancel" type="button" onClick={()=>setPromotion(null)}>Cancel</button>
         </div>
       </div>}
