@@ -5,7 +5,7 @@ import { Chess, type Color, type Move, type PieceSymbol, type Square } from "che
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { ChessPiece } from "@/components/chess-piece";
 
-type Screen = "play" | "puzzles" | "analysis" | "learn";
+type Screen = "home" | "play" | "puzzles" | "analysis" | "learn" | "live" | "community" | "more";
 type Task = "move" | "analysis" | null;
 type Analysis = { depth: number; evaluation: string; line: string[] };
 type Promotion = { from: Square; to: Square; color: Color };
@@ -65,7 +65,7 @@ export function ChessPlatform() {
   const dragRef = useRef<{ from: Square; pointerId: number } | null>(null);
 
   const [revision, setRevision] = useState(0);
-  const [screen, setScreen] = useState<Screen>("play");
+  const [screen, setScreen] = useState<Screen>("home");
   const [mode, setMode] = useState<"computer" | "local">("computer");
   const [humanColor, setHumanColor] = useState<Color>("w");
   const [skill, setSkill] = useState(8);
@@ -85,16 +85,30 @@ export function ChessPlatform() {
   const [puzzleIndex, setPuzzleIndex] = useState(0);
   const [puzzleSolved, setPuzzleSolved] = useState(false);
   const [puzzleMessage, setPuzzleMessage] = useState("Find the best move.");
+  const [matchTab, setMatchTab] = useState<"moves" | "chat" | "info">("moves");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [timeControlSeconds, setTimeControlSeconds] = useState(600);
+  const [clockEnabled, setClockEnabled] = useState(false);
+  const [clock, setClock] = useState({ w: 600, b: 600 });
 
   const history = game.history({ verbose: true });
   const lastMove = history.length ? history[history.length - 1] : null;
-  const gameOver = game.isGameOver();
+  const timedOut = clockEnabled && clock[game.turn()] <= 0;
+  const gameOver = game.isGameOver() || timedOut;
   const legalMoves = selected ? game.moves({ square:selected, verbose:true }) as Move[] : [];
   const legalTargets = new Set(legalMoves.map((move) => move.to));
   const captureTargets = new Set(legalMoves.filter((move) => move.captured || move.isEnPassant()).map((move) => move.to));
   const checkedKing = game.isCheck() ? game.findPiece({ type:"k", color:game.turn() })[0] as Square | undefined : undefined;
   const currentPuzzle = PUZZLES[puzzleIndex];
   const refresh = useCallback(() => setRevision((value) => value + 1), []);
+
+  useEffect(() => {
+    if (screen !== "play" || !clockEnabled || gameOver) return;
+    const timer = window.setInterval(() => {
+      setClock((current) => ({ ...current, [game.turn()]: Math.max(0, current[game.turn()] - 1) }));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [screen, clockEnabled, game.turn(), gameOver, revision]);
 
   useEffect(() => {
     if (typeof Worker === "undefined") {
@@ -105,7 +119,7 @@ export function ChessPlatform() {
     try {
       worker = new Worker(ENGINE_URL, { name:"ChessBox Stockfish" });
     } catch {
-      setEngineError("The chess engine could not be started.");
+      window.setTimeout(() => setEngineError("The chess engine could not be started."), 0);
       return;
     }
     workerRef.current = worker;
@@ -171,10 +185,10 @@ export function ChessPlatform() {
     workerRef.current.postMessage("setoption name Skill Level value " + skill);
     workerRef.current.postMessage("position fen " + fen);
     workerRef.current.postMessage("go movetime 850");
-  }, [screen, mode, humanColor, skill, engineReady, revision, game]);
+  }, [screen, mode, humanColor, skill, engineReady, revision, game, timedOut]);
 
-  const statusTitle = game.isCheckmate() ? sideName(game.turn() === "w" ? "b" : "w") + " wins" : game.isDraw() ? "Draw" : sideName(game.turn()) + " to move";
-  const statusDetail = game.isCheckmate() ? "Checkmate" : game.isStalemate() ? "Stalemate" :
+  const statusTitle = timedOut ? sideName(game.turn() === "w" ? "b" : "w") + " wins" : game.isCheckmate() ? sideName(game.turn() === "w" ? "b" : "w") + " wins" : game.isDraw() ? "Draw" : sideName(game.turn()) + " to move";
+  const statusDetail = timedOut ? "Time expired" : game.isCheckmate() ? "Checkmate" : game.isStalemate() ? "Stalemate" :
     game.isThreefoldRepetition() ? "Threefold repetition" : game.isInsufficientMaterial() ? "Insufficient material" :
     game.isDraw() ? "Draw by the fifty-move rule" : game.isCheck() ? "King in check" : "Game in progress";
 
@@ -259,8 +273,12 @@ export function ChessPlatform() {
     dragRef.current=null; setDrag(null);
   }
 
-  function startNewGame() {
+  function startNewGame(nextMode: "computer" | "local" = mode, seconds = timeControlSeconds) {
     stopEngineTask();
+    setMode(nextMode);
+    setTimeControlSeconds(seconds);
+    setClock({ w: seconds, b: seconds });
+    setClockEnabled(seconds > 0);
     const nextGame = new Chess();
     gameRef.current = nextGame;
     setGame(nextGame);
@@ -286,9 +304,11 @@ export function ChessPlatform() {
     setSelected(null); setPromotion(null); setAnalysis(null); refresh();
   }
   function openScreen(next: Screen) {
-    stopEngineTask(); clearSelection(); setScreen(next);
+    stopEngineTask();
+    clearSelection();
+    setScreen(next);
     if (next === "puzzles") loadPuzzle(puzzleIndex);
-    if (next === "play" && game.isGameOver()) startNewGame();
+    if (next === "play" && game.isGameOver()) startNewGame(mode, timeControlSeconds);
   }
   function loadOpening(pgn: string) {
     try {
@@ -328,185 +348,411 @@ export function ChessPlatform() {
 
   const ranks = orientation === "w" ? [8,7,6,5,4,3,2,1] : [1,2,3,4,5,6,7,8];
   const files = orientation === "w" ? ["a","b","c","d","e","f","g","h"] : ["h","g","f","e","d","c","b","a"];
-  const navItems: { id:Screen; label:string }[] = [
-    {id:"play",label:"Play"},{id:"puzzles",label:"Puzzles"},{id:"analysis",label:"Analysis"},{id:"learn",label:"Learn"}
+  const navItems: { id:Screen; label:string; icon:string }[] = [
+    {id:"home",label:"Home",icon:"⌂"},
+    {id:"play",label:"Play",icon:"▶"},
+    {id:"puzzles",label:"Puzzles",icon:"✣"},
+    {id:"learn",label:"Learn",icon:"◆"},
+    {id:"analysis",label:"Analysis",icon:"▥"},
+    {id:"live",label:"Live",icon:"◉"},
+    {id:"community",label:"Community",icon:"♧"},
+    {id:"more",label:"More",icon:"•••"},
   ];
+
+  function formatClock(seconds: number) {
+    const safe = Math.max(0, seconds);
+    const minutes = Math.floor(safe / 60);
+    const remaining = safe % 60;
+    return String(minutes) + ":" + String(remaining).padStart(2, "0");
+  }
 
   function renderPlayer(color: Color, place: "top" | "bottom") {
     const active = game.turn() === color && !gameOver;
-    const name = screen === "play" && mode === "computer" ? color === humanColor ? "You" : "Stockfish" : sideName(color);
+    const name = mode === "computer" ? color === humanColor ? "You" : "Stockfish" : sideName(color);
+    const rating = mode === "computer" ? color === humanColor ? "Guest player" : "Browser engine" : "Local player";
     return (
-      <div className={"player-row " + (active ? "player-active" : "")}>
-        <div className={"player-avatar " + (color === "w" ? "avatar-white" : "avatar-black")}><span>{color === "w" ? "W" : "B"}</span></div>
-        <div className="player-copy"><span className="player-name">{name}</span><span className="player-caption">{sideName(color)} pieces</span></div>
-        <span className="player-turn">{active ? "TO MOVE" : place === "top" ? "" : ""}</span>
+      <div className={"match-player " + (active ? "match-player-active" : "")}>
+        <div className={"match-avatar " + (color === "w" ? "avatar-white" : "avatar-black")}>
+          <span>{color === "w" ? "W" : "B"}</span>
+          <i />
+        </div>
+        <div className="match-player-copy">
+          <span className="match-player-name">{name}</span>
+          <span className="match-player-caption">{rating} · {sideName(color)}</span>
+        </div>
+        <div className={"match-clock " + (active ? "match-clock-active" : "") + (clock[color] <= 30 && clockEnabled ? " match-clock-low" : "")}>
+          <span className="clock-symbol">◷</span>
+          {clockEnabled ? formatClock(clock[color]) : "∞"}
+        </div>
       </div>
     );
   }
 
   return (
-    <main className="app-shell">
-      <header className="topbar">
-        <a className="brand" href={BASE_PATH + "/"} aria-label="ChessBox home">
-          <span className="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 32 32" fill="none"><rect x="2" y="2" width="28" height="28" rx="7" fill="currentColor"/><path d="M8 8h7v7H8zM17 17h7v7h-7z" fill="#20272C"/><path d="M17 8h7v7h-7zM8 17h7v7H8z" fill="#E9EDE8"/></svg>
-          </span>
-          <span className="brand-name">chessbox</span>
-        </a>
-        <nav className="topbar-nav" aria-label="Main navigation">
-          {navItems.map((item) => <button className={"nav-tab " + (screen === item.id ? "nav-tab-active" : "")} key={item.id} type="button" onClick={() => openScreen(item.id)}>{item.label}</button>)}
+    <main className="chessbox-app">
+      <aside className="site-sidebar">
+        <button className="sidebar-brand" type="button" onClick={() => openScreen("home")}>
+          <span className="sidebar-brand-piece"><ChessPiece type="n" color="w" /></span>
+          <span>ChessBox</span>
+        </button>
+        <nav className="sidebar-navigation" aria-label="Main navigation">
+          {navItems.map((item) => (
+            <button
+              className={"sidebar-nav-item " + (screen === item.id ? "sidebar-nav-active" : "")}
+              key={item.id}
+              type="button"
+              onClick={() => openScreen(item.id)}
+            >
+              <span className="sidebar-nav-icon" aria-hidden="true">{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
         </nav>
-        <a className="github-link" href="https://github.com/ajxiye/chessbox" target="_blank" rel="noreferrer">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.56.1.76-.24.76-.54v-2.1c-3.1.68-3.75-1.32-3.75-1.32-.5-1.3-1.24-1.65-1.24-1.65-1.01-.7.08-.69.08-.69 1.12.08 1.7 1.15 1.7 1.15.99 1.7 2.6 1.21 3.23.93.1-.72.39-1.21.7-1.49-.28-2.48-1.24-5.08-5.52-5.08-1.22 0-2.22.44-3.01 1.15-.28-.12-1.42-.5-2.96.11 0 0-.3.94 1.14 3.05a10.6 10.6 0 0 1 0 5.56c-1.44 2.12-1.14 3.05-1.14 3.05.61 1.54 2.68.23 2.96.12.78.72 1.78 1.15 3.01 1.15 4.29 0 5.23-2.61 5.5-5.1.35.4 1.02.75 2.06.75h3.12c.3 0 .65.2.54.77A11.1 11.1 0 0 0 12 .9Z"/></svg>
-          <span>Source</span><span className="external-arrow">↗</span>
-        </a>
-      </header>
-
-      <div className="page-content">
-        <section className="page-heading">
-          <div>
-            <div className="eyebrow"><span className="eyebrow-line"/> CHESSBOX / {screen.toUpperCase()}</div>
-            <h1>{screen === "play" ? "A board of your own." : screen === "puzzles" ? "Find the move." : screen === "analysis" ? "Look a little deeper." : "Learn the game."}</h1>
-            <p>{screen === "play" ? "Play a friend locally or take on Stockfish, right in your browser." : screen === "puzzles" ? "A tactical challenge. No account, rating, or paywall." : screen === "analysis" ? "Explore positions with a free, local chess engine." : "Study a few classic openings and build a feel for the position."}</p>
+        <div className="sidebar-bottom">
+          <div className="guest-profile">
+            <span className="guest-avatar">G</span>
+            <span><b>Guest session</b><small>Playing without an account</small></span>
           </div>
-          <div className="build-label"><span className="status-dot"/> FREE · OPEN SOURCE</div>
-        </section>
+          <a className="sidebar-source-link" href="https://github.com/ajxiye/chessbox" target="_blank" rel="noreferrer">
+            <span>↗</span> Open-source project
+          </a>
+          <div className="sidebar-version">FREE FOREVER · OPEN SOURCE</div>
+        </div>
+      </aside>
 
-        {screen === "learn" ? (
-          <section className="learning-grid">
-            {OPENINGS.map((opening) => (
-              <article className="opening-card" key={opening.name}>
-                <div className="opening-meta"><span>{opening.eco}</span><span>{opening.style}</span></div>
-                <h2>{opening.name}</h2><div className="opening-line">{opening.moves}</div>
-                <p>{opening.note}</p>
-                <button className="primary-button" type="button" onClick={() => loadOpening(opening.pgn)}>Load position on board <span aria-hidden="true">↗</span></button>
-              </article>
-            ))}
-            <div className="learning-note"><span className="footnote-mark">i</span><p>These are starting points, not complete opening repertoires. Load a line to continue playing from its final position.</p></div>
-          </section>
-        ) : (
-          <section className="game-layout">
-            <div className="board-panel">
-              {renderPlayer(orientation === "w" ? "b" : "w","top")}
-              <div className="board-frame">
-                <div className="board-grid" role="group" aria-label="Chessboard">
-                  {ranks.map((rank,rowIndex) => files.map((file,columnIndex) => {
-                    const square = (file + rank) as Square;
-                    const piece = game.get(square);
-                    const light = (file.charCodeAt(0)-97+rank)%2 === 0;
-                    const last = lastMove?.from === square || lastMove?.to === square;
-                    const legal = legalTargets.has(square);
-                    const capture = captureTargets.has(square);
-                    const checked = checkedKing === square;
-                    const isDragged = drag?.from === square;
-                    const locked = screen === "play" && mode === "computer" && !isHumanTurn();
-                    return (
-                      <button key={square} type="button" data-square={square}
-                        className={["board-square",light?"square-light":"square-dark",last?"square-last-move":"",selected===square?"square-selected":"",checked?"square-check":""].filter(Boolean).join(" ")}
-                        aria-label={square + ", " + (piece ? sideName(piece.color)+" "+pieceName(piece.type) : "empty")}
-                        aria-pressed={selected===square}
-                        disabled={locked || (screen==="puzzles" && puzzleSolved)}
-                        onClick={() => { if(suppressClickRef.current){suppressClickRef.current=false;return;} handleSquareClick(square); }}
-                        onPointerDown={(event)=>handlePointerDown(event,square)}
-                        onPointerMove={handlePointerMove} onPointerUp={handlePointerUp}
-                        onPointerCancel={clearSelection} onContextMenu={(event)=>event.preventDefault()}>
-                        {columnIndex===0 && <span className="rank-coordinate">{rank}</span>}
-                        {rowIndex===7 && <span className="file-coordinate">{file}</span>}
-                        {piece && !isDragged && <ChessPiece type={piece.type} color={piece.color}/>}
-                        {legal && <span className={capture?"move-indicator move-capture":"move-indicator"}/>}
-                      </button>
-                    );
-                  }))}
+      <div className="app-main">
+        <header className="dashboard-topbar">
+          <label className="global-search">
+            <span aria-hidden="true">⌕</span>
+            <input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  const query = searchQuery.toLowerCase();
+                  if (query.includes("puzz")) openScreen("puzzles");
+                  else if (query.includes("anal")) openScreen("analysis");
+                  else if (query.includes("learn") || query.includes("opening")) openScreen("learn");
+                  else openScreen("play");
+                }
+              }}
+              placeholder="Search players, games, or topics..."
+              aria-label="Search ChessBox"
+            />
+          </label>
+          <div className="topbar-actions">
+            <span className="topbar-status" title="Guest mode">GUEST</span>
+            <button className="notification-button" type="button" onClick={() => setDataMessage("You are playing in guest mode. Notifications are not connected.")} aria-label="Notifications">♧</button>
+            <div className="topbar-avatar" aria-label="Guest profile">G</div>
+          </div>
+        </header>
+
+        {screen === "home" && (
+          <div className="dashboard-content">
+            <div className="dashboard-primary">
+              <section className="hero-banner">
+                <div className="hero-copy">
+                  <span className="hero-kicker">THE HOME OF FREE CHESS</span>
+                  <h1>Play Chess<br />for Free</h1>
+                  <p>Challenge the engine, play a friend on the same device, and improve your game.</p>
+                  <button className="hero-cta" type="button" onClick={() => startNewGame("computer", timeControlSeconds)}>
+                    Play Now <span>›</span>
+                  </button>
                 </div>
-                {drag && (() => { const piece=game.get(drag.from); return piece ? <div className="drag-ghost" style={{left:drag.x,top:drag.y}}><ChessPiece type={piece.type} color={piece.color}/></div> : null; })()}
-              </div>
-              {renderPlayer(orientation === "w" ? "w" : "b","bottom")}
-              <div className="board-note"><span className="keyboard-hint"><kbd>Click</kbd> or drag a piece to move</span><span className="board-coordinates">FILES A–H <span/> RANKS 1–8</span></div>
+                <div className="hero-knight-art" aria-hidden="true">
+                  <div className="hero-knight-shape" />
+                  <ChessPiece type="n" color="w" className="hero-knight-piece" />
+                </div>
+                <div className="hero-diagonal hero-diagonal-one" />
+                <div className="hero-diagonal hero-diagonal-two" />
+              </section>
+
+              <section className="quick-play-section">
+                <div className="section-title-row"><h2>Start a Game</h2><span>CHOOSE YOUR PACE</span></div>
+                <div className="quick-play-grid">
+                  <button className="quick-play-card" type="button" onClick={() => startNewGame("computer", 180)}>
+                    <span className="quick-play-icon">ϟ</span><b>Play Blitz</b><small>3 min · vs computer</small>
+                  </button>
+                  <button className="quick-play-card" type="button" onClick={() => startNewGame("computer", 600)}>
+                    <span className="quick-play-icon">◷</span><b>Play Rapid</b><small>10 min · vs computer</small>
+                  </button>
+                  <button className="quick-play-card" type="button" onClick={() => startNewGame("computer", 1800)}>
+                    <span className="quick-play-icon">◴</span><b>Play Classical</b><small>30 min · vs computer</small>
+                  </button>
+                  <button className="quick-play-card" type="button" onClick={() => startNewGame("local", 600)}>
+                    <span className="quick-play-icon">♟</span><b>Play with a Friend</b><small>Two players · one device</small>
+                  </button>
+                </div>
+              </section>
+
+              <section className="dashboard-puzzle-section">
+                <div className="section-title-row"><h2><span className="section-heading-icon">✣</span> Puzzles</h2><button type="button" onClick={() => openScreen("puzzles")}>See all <span>→</span></button></div>
+                <div className="daily-puzzle-card">
+                  <div className="puzzle-thumbnail" aria-hidden="true">
+                    <div className="puzzle-mini-board">
+                      {Array.from({length: 16}, (_, index) => (
+                        <span key={index} className={(Math.floor(index / 4) + index % 4) % 2 === 0 ? "mini-light" : "mini-dark"}>
+                          {({1:"♟",3:"♛",4:"♙",5:"♙",6:"♚",11:"♗",14:"♔"} as Record<number,string>)[index] ?? ""}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="daily-puzzle-copy">
+                    <b>Daily Puzzle</b>
+                    <p>Solve a tactical position and sharpen your pattern recognition.</p>
+                    <button className="puzzle-solve-button" type="button" onClick={() => openScreen("puzzles")}>Solve puzzle <span>→</span></button>
+                  </div>
+                </div>
+              </section>
+
+              <section className="learn-strip">
+                <div><span className="learn-strip-icon">◆</span><b>Build your chess knowledge</b><small>Explore opening ideas and practical explanations.</small></div>
+                <button type="button" onClick={() => openScreen("learn")}>Explore Learn <span>→</span></button>
+              </section>
             </div>
 
-            <aside className="game-sidebar">
-              {screen==="play" && <>
-                <div className="status-card">
-                  <div className="sidebar-section-label">GAME STATUS</div>
-                  <div className="status-main"><span className={"turn-indicator "+(gameOver?"turn-finished":game.turn()==="w"?"turn-white":"turn-black")}/><div><h2>{statusTitle}</h2><p>{engineThinking?"Stockfish is thinking…":statusDetail}</p></div></div>
-                  {game.isCheck() && !gameOver && <div className="check-callout">Check. Find a safe square for your king.</div>}
-                  {gameOver && <div className="result-callout">Game finished. Start a new game to play again.</div>}
+            <aside className="dashboard-rail">
+              <section className="dashboard-card stats-card">
+                <div className="dashboard-card-heading"><h2><span>▥</span> Your Stats</h2><span className="guest-tag">GUEST</span></div>
+                <div className="stats-grid">
+                  <div><b>Unrated</b><small>Rapid Rating</small></div>
+                  <div><b>Unrated</b><small>Blitz Rating</small></div>
+                  <div><b>Local</b><small>Profile</small></div>
                 </div>
-                <div className="controls-card">
-                  <div className="sidebar-section-label">GAME MODE</div>
-                  <div className="mode-switch">
-                    <button type="button" className={mode==="computer"?"mode-option mode-active":"mode-option"} onClick={()=>{setMode("computer");setAnalysis(null);}}>vs Computer</button>
-                    <button type="button" className={mode==="local"?"mode-option mode-active":"mode-option"} onClick={()=>{setMode("local");stopEngineTask();}}>Local 2-player</button>
-                  </div>
-                  {mode==="computer" && <>
-                    <label className="field-label" htmlFor="player-side">Play as</label>
-                    <select id="player-side" className="field-select" value={humanColor} onChange={(event)=>{setHumanColor(event.target.value as Color);setOrientation(event.target.value as Color);}}>
-                      <option value="w">White</option><option value="b">Black</option>
-                    </select>
-                    <label className="field-label" htmlFor="engine-skill">Engine strength <span>{skill}/20</span></label>
-                    <input id="engine-skill" className="skill-slider" type="range" min="0" max="20" value={skill} onChange={(event)=>setSkill(Number(event.target.value))}/>
-                  </>}
-                  <button className="primary-button" type="button" onClick={startNewGame}>＋ New game</button>
-                  <div className="secondary-actions">
-                    <button className="secondary-button" type="button" onClick={undoMove} disabled={history.length===0}>↶ Undo</button>
-                    <button className="secondary-button" type="button" onClick={()=>setOrientation(value=>value==="w"?"b":"w")}>⇅ Flip board</button>
-                  </div>
-                  <button className="text-button" type="button" onClick={()=>copyText(game.pgn(),"PGN")}>Copy game (PGN)</button>
-                  <button className="text-button" type="button" onClick={()=>copyText(game.fen(),"FEN")}>Copy position (FEN)</button>
-                  {copyMessage && <div className="inline-message">{copyMessage}</div>}
-                </div>
-                <div className="moves-card">
-                  <div className="moves-heading"><div className="sidebar-section-label">MOVE HISTORY</div><span className="move-count">{history.length} plies</span></div>
-                  {moveRows.length===0 ? <div className="empty-history"><span className="empty-history-icon">· · ·</span><p>Your game starts here.</p><span>Make a move to begin the notation.</span></div> :
-                    <div className="move-list" aria-label="Move history">{moveRows.map(row=><div className="move-row" key={row.number}><span className="move-number">{row.number}.</span><span className="move-san">{row.white?.san??""}</span><span className="move-san">{row.black?.san??""}</span></div>)}</div>}
-                </div>
-                <div className="engine-footnote"><span className={engineReady?"status-dot":"engine-dot-off"}/><p>{engineReady?"Stockfish 19 is ready in your browser.":engineError||"Loading the chess engine…"}</p></div>
-              </>}
+                <div className="stats-note"><span className="status-dot" /> No accounts or rating claims. Your games run in this browser.</div>
+              </section>
 
-              {screen==="puzzles" && <>
-                <div className="status-card">
-                  <div className="sidebar-section-label">TACTIC SET · {puzzleIndex+1}/{PUZZLES.length}</div>
-                  <div className="puzzle-title">{currentPuzzle.title}</div>
-                  <div className="puzzle-tags"><span>{currentPuzzle.theme}</span><span>{currentPuzzle.side} to move</span></div>
-                  <p className="puzzle-prompt">{puzzleMessage}</p>
-                  {puzzleSolved && <p className="puzzle-explanation">{currentPuzzle.explanation}</p>}
+              <section className="dashboard-card online-card">
+                <div className="dashboard-card-heading"><h2><span className="online-dot" /> Online Players</h2><span className="offline-badge">OFFLINE</span></div>
+                <div className="offline-players">
+                  <div className="offline-avatar">♟</div>
+                  <div><b>Online matchmaking</b><small>Not connected in the static Pages build</small></div>
                 </div>
-                <div className="controls-card">
-                  <button className="primary-button" type="button" onClick={()=>loadPuzzle(puzzleIndex+1)}>Next puzzle <span>→</span></button>
-                  <button className="secondary-button" type="button" onClick={()=>loadPuzzle(puzzleIndex)}>Restart puzzle</button>
-                  <button className="text-button" type="button" onClick={()=>openScreen("play")}>Back to playing</button>
-                </div>
-                <div className="sidebar-footnote"><span className="footnote-mark">i</span><p>Original ChessBox exercises. More puzzle sets and difficulty levels can be added as open data.</p></div>
-              </>}
+                <p>Real-time games need a multiplayer server. You can play the engine or a friend locally right now.</p>
+                <button className="rail-action-button" type="button" onClick={() => startNewGame("local", 600)}>Play locally <span>→</span></button>
+              </section>
 
-              {screen==="analysis" && <>
-                <div className="status-card">
-                  <div className="sidebar-section-label">ENGINE ANALYSIS</div>
-                  <div className="status-main"><span className="turn-indicator turn-finished"/><div><h2>{analysis?analysis.evaluation:analysisBusy?"Analysing…":"Ready to analyse"}</h2><p>{analysis?"Depth "+analysis.depth:"Stockfish 19 · browser engine"}</p></div></div>
-                  {analysis?.line.length ? <div className="pv-line"><span>BEST LINE</span><p>{analysis.line.join("  ")}</p></div>:null}
-                  <button className="primary-button analysis-button" type="button" onClick={runAnalysis} disabled={!engineReady||analysisBusy||engineThinking||gameOver}>{analysisBusy?"Analysing position…":"Analyse current position"}</button>
-                  {engineError && <p className="form-message">{engineError}</p>}
+              <section className="dashboard-card recent-card">
+                <div className="dashboard-card-heading"><h2><span>◷</span> Recent Games</h2><span className="guest-tag">THIS SESSION</span></div>
+                <div className="recent-empty">
+                  <span className="recent-empty-icon">♞</span>
+                  <b>No saved games yet</b>
+                  <small>Start a game to create your first session.</small>
                 </div>
-                <div className="controls-card">
-                  <div className="sidebar-section-label">LOAD POSITION</div>
-                  <label className="field-label" htmlFor="fen-input">FEN</label>
-                  <textarea id="fen-input" className="data-input" rows={3} value={fenInput} onChange={event=>setFenInput(event.target.value)} placeholder="Paste a FEN position…"/>
-                  <button className="secondary-button" type="button" onClick={loadFen}>Load FEN</button>
-                  <label className="field-label" htmlFor="pgn-input">PGN</label>
-                  <textarea id="pgn-input" className="data-input" rows={4} value={pgnInput} onChange={event=>setPgnInput(event.target.value)} placeholder="Paste a PGN game…"/>
-                  <button className="secondary-button" type="button" onClick={loadPgn}>Load PGN</button>
-                  <button className="text-button" type="button" onClick={()=>copyText(game.pgn(),"PGN")}>Copy current PGN</button>
-                  <button className="text-button" type="button" onClick={()=>copyText(game.fen(),"FEN")}>Copy current FEN</button>
-                  {dataMessage && <p className="form-message">{dataMessage}</p>}{copyMessage && <p className="form-message">{copyMessage}</p>}
-                </div>
-              </>}
+                <button className="rail-action-button" type="button" onClick={() => startNewGame("computer", 600)}>Start a game <span>→</span></button>
+              </section>
+
+              <section className="dashboard-card open-card">
+                <div className="dashboard-card-heading"><h2>Built in the open</h2><span className="status-dot" /></div>
+                <p>ChessBox is free, open source, and has no ads or subscriptions.</p>
+                <a href="https://github.com/ajxiye/chessbox" target="_blank" rel="noreferrer">View the source code ↗</a>
+              </section>
             </aside>
-          </section>
+          </div>
         )}
 
-        <footer className="page-footer"><span>ChessBox <span className="footer-separator">/</span> Open source chess</span><span>No ads. No subscriptions. No account required.</span></footer>
+        {screen === "play" && (
+          <div className="match-content">
+            <div className="match-stage">
+              <div className="match-stage-heading">
+                <div><span className="match-breadcrumb">CHESSBOX / PLAY</span><h1>{mode === "computer" ? "Practice match" : "Local match"}</h1></div>
+                <span className="match-mode-pill">{mode === "computer" ? "VS STOCKFISH" : "TWO PLAYERS · LOCAL"}</span>
+              </div>
+              <div className="match-board-wrap">
+                {renderPlayer(orientation === "w" ? "b" : "w", "top")}
+                <div className="board-frame match-board-frame">
+                  <div className="board-grid" role="group" aria-label="Chessboard">
+                    {ranks.map((rank,rowIndex) => files.map((file,columnIndex) => {
+                      const square = (file + rank) as Square;
+                      const piece = game.get(square);
+                      const light = (file.charCodeAt(0)-97+rank)%2 === 0;
+                      const last = lastMove?.from === square || lastMove?.to === square;
+                      const legal = legalTargets.has(square);
+                      const capture = captureTargets.has(square);
+                      const checked = checkedKing === square;
+                      const isDragged = drag?.from === square;
+                      const locked = mode === "computer" && !isHumanTurn();
+                      return (
+                        <button key={square} type="button" data-square={square}
+                          className={["board-square",light?"square-light":"square-dark",last?"square-last-move":"",selected===square?"square-selected":"",checked?"square-check":""].filter(Boolean).join(" ")}
+                          aria-label={square + ", " + (piece ? sideName(piece.color)+" "+pieceName(piece.type) : "empty")}
+                          aria-pressed={selected===square}
+                          disabled={locked || gameOver}
+                          onClick={() => { if(suppressClickRef.current){suppressClickRef.current=false;return;} handleSquareClick(square); }}
+                          onPointerDown={(event)=>handlePointerDown(event,square)}
+                          onPointerMove={handlePointerMove} onPointerUp={handlePointerUp}
+                          onPointerCancel={clearSelection} onContextMenu={(event)=>event.preventDefault()}>
+                          {columnIndex===0 && <span className="rank-coordinate">{rank}</span>}
+                          {rowIndex===7 && <span className="file-coordinate">{file}</span>}
+                          {piece && !isDragged && <ChessPiece type={piece.type} color={piece.color}/>}
+                          {legal && <span className={capture?"move-indicator move-capture":"move-indicator"}/>}
+                        </button>
+                      );
+                    }))}
+                  </div>
+                  {drag && (() => { const piece=game.get(drag.from); return piece ? <div className="drag-ghost" style={{left:drag.x,top:drag.y}}><ChessPiece type={piece.type} color={piece.color}/></div> : null; })()}
+                </div>
+                {renderPlayer(orientation === "w" ? "w" : "b", "bottom")}
+                <div className="match-board-controls">
+                  <button type="button" onClick={undoMove} disabled={history.length===0} aria-label="Undo move" title="Undo move">↶</button>
+                  <button type="button" onClick={() => startNewGame(mode, timeControlSeconds)} aria-label="New game" title="New game">↻</button>
+                  <button type="button" onClick={() => setOrientation(value => value==="w"?"b":"w")} aria-label="Flip board" title="Flip board">⇅</button>
+                  <button type="button" onClick={() => copyText(game.fen(), "FEN")} aria-label="Copy position" title="Copy FEN">⧉</button>
+                  <span className="match-control-spacer" />
+                  <button type="button" onClick={() => openScreen("analysis")} aria-label="Analyse game" title="Analyse game">⚙</button>
+                </div>
+                <div className="engine-footnote"><span className={engineReady?"status-dot":"engine-dot-off"}/><p>{engineReady ? "Stockfish 19 ready in your browser" : engineError || "Loading local chess engine…"}</p></div>
+              </div>
+            </div>
+
+            <aside className="match-sidebar">
+              <div className="match-tabs" role="tablist" aria-label="Match panel">
+                <button type="button" role="tab" aria-selected={matchTab==="moves"} className={matchTab==="moves"?"match-tab match-tab-active":"match-tab"} onClick={() => setMatchTab("moves")}>Moves</button>
+                <button type="button" role="tab" aria-selected={matchTab==="chat"} className={matchTab==="chat"?"match-tab match-tab-active":"match-tab"} onClick={() => setMatchTab("chat")}>Chat</button>
+                <button type="button" role="tab" aria-selected={matchTab==="info"} className={matchTab==="info"?"match-tab match-tab-active":"match-tab"} onClick={() => setMatchTab("info")}>Info</button>
+              </div>
+              {matchTab==="moves" && (
+                <div className="match-tab-content moves-tab-content">
+                  <div className="match-panel-heading"><b>Move list</b><span>{history.length} plies</span></div>
+                  {moveRows.length===0 ? (
+                    <div className="match-empty"><span>♙</span><b>Waiting for the first move</b><small>Your notation will appear here.</small></div>
+                  ) : (
+                    <div className="match-move-list">
+                      {moveRows.map(row => <div className="match-move-row" key={row.number}><span>{row.number}.</span><b>{row.white?.san ?? ""}</b><b>{row.black?.san ?? ""}</b></div>)}
+                    </div>
+                  )}
+                  {gameOver && <div className="match-result-note">{statusTitle} · {statusDetail}</div>}
+                </div>
+              )}
+              {matchTab==="chat" && (
+                <div className="match-tab-content match-info-content">
+                  <div className="match-empty"><span>☷</span><b>Chat is unavailable offline</b><small>Chat will be available when ChessBox has a real online multiplayer service. Local games do not send messages anywhere.</small></div>
+                </div>
+              )}
+              {matchTab==="info" && (
+                <div className="match-tab-content match-info-content">
+                  <div className="match-panel-heading"><b>Game information</b><span>LOCAL</span></div>
+                  <div className="info-pair"><span>Game mode</span><b>{mode === "computer" ? "vs Stockfish" : "Local two-player"}</b></div>
+                  <div className="info-pair"><span>Time control</span><b>{Math.floor(timeControlSeconds/60)} min</b></div>
+                  <div className="info-pair"><span>Turn</span><b>{sideName(game.turn())}</b></div>
+                  <div className="info-pair"><span>Status</span><b>{statusDetail}</b></div>
+                  <button className="secondary-button" type="button" onClick={() => copyText(game.fen(), "FEN")}>Copy FEN</button>
+                  <button className="secondary-button" type="button" onClick={() => copyText(game.pgn(), "PGN")}>Copy PGN</button>
+                  {copyMessage && <small className="form-message">{copyMessage}</small>}
+                </div>
+              )}
+              <div className="match-sidebar-bottom">
+                <div className="sidebar-section-label">GAME CONTROLS</div>
+                <button className="match-action-button" type="button" onClick={undoMove} disabled={history.length===0}>↶ <span>Undo last turn</span></button>
+                <button className="match-action-button" type="button" onClick={() => startNewGame(mode, timeControlSeconds)}>＋ <span>New game</span></button>
+                <button className="match-action-button" type="button" onClick={() => openScreen("home")}>⌂ <span>Back to home</span></button>
+              </div>
+            </aside>
+          </div>
+        )}
+
+        {(screen === "puzzles" || screen === "analysis") && (
+          <div className="study-content">
+            <section className="study-heading">
+              <div><span className="match-breadcrumb">CHESSBOX / {screen.toUpperCase()}</span><h1>{screen === "puzzles" ? "Find the move." : "Look a little deeper."}</h1></div>
+              <button className="study-back-button" type="button" onClick={() => openScreen("home")}>← Home</button>
+            </section>
+            <div className="study-layout">
+              <div className="board-panel study-board-panel">
+                {renderPlayer(orientation === "w" ? "b" : "w", "top")}
+                <div className="board-frame">
+                  <div className="board-grid" role="group" aria-label="Chessboard">
+                    {ranks.map((rank,rowIndex) => files.map((file,columnIndex) => {
+                      const square = (file + rank) as Square;
+                      const piece = game.get(square);
+                      const light = (file.charCodeAt(0)-97+rank)%2 === 0;
+                      const last = lastMove?.from === square || lastMove?.to === square;
+                      const legal = legalTargets.has(square);
+                      const capture = captureTargets.has(square);
+                      const checked = checkedKing === square;
+                      return (
+                        <button key={square} type="button" data-square={square}
+                          className={["board-square",light?"square-light":"square-dark",last?"square-last-move":"",selected===square?"square-selected":"",checked?"square-check":""].filter(Boolean).join(" ")}
+                          aria-label={square + ", " + (piece ? sideName(piece.color)+" "+pieceName(piece.type) : "empty")}
+                          onClick={() => { if(suppressClickRef.current){suppressClickRef.current=false;return;} handleSquareClick(square); }}
+                          onPointerDown={(event)=>handlePointerDown(event,square)} onPointerMove={handlePointerMove}
+                          onPointerUp={handlePointerUp} onPointerCancel={clearSelection}>
+                          {columnIndex===0 && <span className="rank-coordinate">{rank}</span>}
+                          {rowIndex===7 && <span className="file-coordinate">{file}</span>}
+                          {piece && <ChessPiece type={piece.type} color={piece.color}/>}
+                          {legal && <span className={capture?"move-indicator move-capture":"move-indicator"}/>}
+                        </button>
+                      );
+                    }))}
+                  </div>
+                </div>
+                {renderPlayer(orientation === "w" ? "w" : "b", "bottom")}
+              </div>
+              <aside className="study-sidebar">
+                {screen==="puzzles" ? <>
+                  <div className="study-card">
+                    <div className="sidebar-section-label">TACTIC SET · {puzzleIndex+1}/{PUZZLES.length}</div>
+                    <h2>{currentPuzzle.title}</h2>
+                    <div className="puzzle-tags"><span>{currentPuzzle.theme}</span><span>{currentPuzzle.side} to move</span></div>
+                    <p className="puzzle-prompt">{puzzleMessage}</p>
+                    {puzzleSolved && <p className="puzzle-explanation">{currentPuzzle.explanation}</p>}
+                    <button className="primary-button" type="button" onClick={() => loadPuzzle(puzzleIndex+1)}>Next puzzle →</button>
+                    <button className="secondary-button" type="button" onClick={() => loadPuzzle(puzzleIndex)}>Restart puzzle</button>
+                  </div>
+                  <p className="study-disclaimer">Original ChessBox exercises. More puzzle sets and difficulty levels can be added as open data.</p>
+                </> : <>
+                  <div className="study-card">
+                    <div className="sidebar-section-label">STOCKFISH ANALYSIS</div>
+                    <h2>{analysis ? analysis.evaluation : analysisBusy ? "Analysing…" : "Ready to analyse"}</h2>
+                    <p className="study-muted">{analysis ? "Depth " + analysis.depth : "Local browser engine · no server required"}</p>
+                    {analysis?.line.length ? <div className="pv-line"><span>BEST LINE</span><p>{analysis.line.join("  ")}</p></div> : null}
+                    <button className="primary-button" type="button" onClick={runAnalysis} disabled={!engineReady || analysisBusy || engineThinking || gameOver}>{analysisBusy ? "Analysing…" : "Analyse position"}</button>
+                    {engineError && <p className="form-message">{engineError}</p>}
+                  </div>
+                  <div className="study-card">
+                    <div className="sidebar-section-label">LOAD POSITION</div>
+                    <label className="field-label" htmlFor="fen-input">FEN</label>
+                    <textarea id="fen-input" className="data-input" rows={3} value={fenInput} onChange={event=>setFenInput(event.target.value)} placeholder="Paste a FEN position…"/>
+                    <button className="secondary-button" type="button" onClick={loadFen}>Load FEN</button>
+                    <label className="field-label" htmlFor="pgn-input">PGN</label>
+                    <textarea id="pgn-input" className="data-input" rows={4} value={pgnInput} onChange={event=>setPgnInput(event.target.value)} placeholder="Paste a PGN game…"/>
+                    <button className="secondary-button" type="button" onClick={loadPgn}>Load PGN</button>
+                    {dataMessage && <p className="form-message">{dataMessage}</p>}
+                  </div>
+                </>}
+              </aside>
+            </div>
+          </div>
+        )}
+
+        {screen === "learn" && (
+          <div className="learn-page">
+            <section className="study-heading"><div><span className="match-breadcrumb">CHESSBOX / LEARN</span><h1>Learn the game.</h1><p>Explore classic opening ideas and load their positions onto the board.</p></div></section>
+            <section className="learning-grid">
+              {OPENINGS.map(opening => (
+                <article className="opening-card" key={opening.name}>
+                  <div className="opening-meta"><span>{opening.eco}</span><span>{opening.style}</span></div>
+                  <h2>{opening.name}</h2><div className="opening-line">{opening.moves}</div><p>{opening.note}</p>
+                  <button className="primary-button" type="button" onClick={() => loadOpening(opening.pgn)}>Load position on board <span>↗</span></button>
+                </article>
+              ))}
+            </section>
+          </div>
+        )}
+
+        {(screen === "live" || screen === "community" || screen === "more") && (
+          <div className="coming-soon-page">
+            <span className="coming-soon-icon">{screen === "live" ? "◉" : screen === "community" ? "♧" : "•••"}</span>
+            <span className="match-breadcrumb">CHESSBOX / {screen.toUpperCase()}</span>
+            <h1>{screen === "live" ? "Live chess is on the roadmap." : screen === "community" ? "A community, built in the open." : "More is coming."}</h1>
+            <p>{screen === "live" ? "Real-time matchmaking needs a multiplayer server. This Pages build stays fully static, so no fake online opponents are shown." : screen === "community" ? "ChessBox is open source. Follow development, report issues, or contribute through the project repository." : "More tools and settings will arrive as the project grows."}</p>
+            <a href="https://github.com/ajxiye/chessbox" target="_blank" rel="noreferrer">Open the ChessBox repository ↗</a>
+            <button className="primary-button" type="button" onClick={() => openScreen("play")}>Play against Stockfish</button>
+          </div>
+        )}
       </div>
 
+      {dataMessage && screen === "home" && <div className="toast-message" role="status">{dataMessage}<button type="button" onClick={() => setDataMessage("")}>×</button></div>}
       {promotion && <div className="promotion-backdrop" role="presentation" onClick={()=>setPromotion(null)}>
         <div className="promotion-dialog" role="dialog" aria-modal="true" aria-labelledby="promotion-title" onClick={event=>event.stopPropagation()}>
           <div className="sidebar-section-label">PAWN PROMOTION</div><h2 id="promotion-title">Choose a piece</h2><p>Your pawn reached the final rank.</p>
