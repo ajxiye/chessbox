@@ -398,7 +398,9 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
     setPuzzleMessage("Find the best move."); setSelected(null); refresh();
   }
   useEffect(() => {
-    if (initialScreen === "puzzles") void loadDailyPuzzle();
+    if (initialScreen !== "puzzles") return;
+    const timer = window.setTimeout(() => { void loadDailyPuzzle(); }, 0);
+    return () => window.clearTimeout(timer);
   }, [initialScreen]);
 
   function openScreen(next: Screen) {
@@ -764,7 +766,7 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
               <span className="puzzle-difficulty">DAILY CHALLENGE</span>
             </section>
             <section className="puzzle-mode-row">
-              <button className="puzzle-mode-card puzzle-mode-active" onClick={loadDailyPuzzle} type="button"><span className="puzzle-mode-icon">▦</span><span><b>Daily Puzzle</b><small>Today's Lichess puzzle</small></span><i>›</i></button>
+              <button className="puzzle-mode-card puzzle-mode-active" onClick={loadDailyPuzzle} type="button"><span className="puzzle-mode-icon">▦</span><span><b>Daily Puzzle</b><small>Today&apos;s Lichess puzzle</small></span><i>›</i></button>
               <button className="puzzle-mode-card puzzle-mode-disabled" type="button" disabled><span className="puzzle-mode-icon">▥</span><span><b>Puzzle Rush</b><small>Coming soon</small></span><i>·</i></button>
               <button className="puzzle-mode-card puzzle-mode-disabled" type="button" disabled><span className="puzzle-mode-icon">◉</span><span><b>Puzzle Streak</b><small>Coming soon</small></span><i>·</i></button>
             </section>
