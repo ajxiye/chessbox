@@ -442,7 +442,7 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
   function loadPgn() {
     try {
       const next = new Chess(); next.loadPgn(pgnInput.trim());
-      stopEngineTask(); gameRef.current=next; setGame(next); setScreen("analysis"); setMode("local");
+      stopEngineTask(); gameRef.current=next; setGame(next); openScreen("analysis"); setMode("local");
       clearSelection(); setAnalysis(null); setDataMessage("PGN loaded successfully."); refresh();
     } catch { setDataMessage("That PGN could not be read. Check its move notation."); }
   }
