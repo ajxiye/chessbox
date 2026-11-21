@@ -111,6 +111,9 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
   const puzzleThemes = remotePuzzle?.themes ?? [currentPuzzle.theme];
   const refresh = useCallback(() => setRevision((value) => value + 1), []);
 
+  useEffect(() => {
+    if (screen === "puzzles" && !remotePuzzle && !puzzleLoading) void loadDailyPuzzle();
+  }, [screen]);
   useEffect(() => { setScreen(initialScreen); }, [initialScreen]);
   useEffect(() => {
     const onPop = () => {
@@ -363,10 +366,9 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
       for(const move of history.slice(0,initialPly)) position.move({from:move.from,to:move.to,...(move.promotion?{promotion:move.promotion}:{})});
       const solution=puzzle.solution as string[];
       const first=parseUci(solution[0]); if(!first) throw new Error("Invalid first puzzle move");
-      position.move({from:first.from,to:first.to,...(first.promotion?{promotion:first.promotion}:{})});
       gameRef.current=position; setGame(position);
       setRemotePuzzle({id:String(puzzle.id),rating:Number(puzzle.rating??0),plays:Number(puzzle.plays??0),themes:Array.isArray(puzzle.themes)?puzzle.themes:[],solution,initialPly,gamePgn:pgn});
-      setPuzzleTurnIndex(1); setPuzzleMessage("Find the best move for "+(position.turn()==="w"?"White":"Black")+".");
+      setPuzzleTurnIndex(0); setPuzzleMessage("Find the best move for "+(position.turn()==="w"?"White":"Black")+".");
       setOrientation(position.turn()); setSelected(null); setPromotion(null); setAnalysis(null); refresh();
     } catch(error) {
       loadPuzzle(puzzleIndex);
@@ -389,9 +391,7 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
     const source=new Chess(); source.loadPgn(remotePuzzle.gamePgn);
     const history=source.history({verbose:true}); const next=new Chess();
     for(const move of history.slice(0,remotePuzzle.initialPly)) next.move({from:move.from,to:move.to,...(move.promotion?{promotion:move.promotion}:{})});
-    const first=parseUci(remotePuzzle.solution[0]);
-    if(first) next.move({from:first.from,to:first.to,...(first.promotion?{promotion:first.promotion}:{})});
-    gameRef.current=next; setGame(next); setPuzzleTurnIndex(1); setPuzzleSolved(false); setPuzzleHintLevel(0);
+    gameRef.current=next; setGame(next); setPuzzleTurnIndex(0); setPuzzleSolved(false); setPuzzleHintLevel(0);
     setPuzzleMessage("Find the best move."); setSelected(null); refresh();
   }
   function openScreen(next: Screen) {
