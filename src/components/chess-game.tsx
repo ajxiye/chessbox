@@ -685,7 +685,12 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
                           onPointerCancel={clearSelection} onContextMenu={(event)=>event.preventDefault()}>
                           {columnIndex===0 && <span className="rank-coordinate">{rank}</span>}
                           {rowIndex===7 && <span className="file-coordinate">{file}</span>}
-                          {piece && !isDragged && <ChessPiece key={square + piece.color + piece.type} type={piece.type} color={piece.color}/>}
+                          {piece && !isDragged && <ChessPiece key={square + piece.color + piece.type} type={piece.type} color={piece.color}
+    className={lastMove?.to === square ? "last-move-piece" : ""}
+    style={lastMove?.to === square ? ({
+      "--piece-from-x": ((files.indexOf(lastMove.from[0]) - columnIndex) * 100) + "%",
+      "--piece-from-y": ((ranks.indexOf(Number(lastMove.from[1])) - rowIndex) * 100) + "%",
+    } as unknown as import("react").CSSProperties) : undefined}/>}
                           {legal && <span className={capture?"move-indicator move-capture":"move-indicator"}/>}
                         </button>
                       );
@@ -778,7 +783,12 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
     onPointerUp={handlePointerUp} onPointerCancel={clearSelection}>
     {columnIndex===0&&<span className="rank-coordinate">{rank}</span>}
     {rowIndex===7&&<span className="file-coordinate">{file}</span>}
-    {piece&&<ChessPiece key={square+piece.color+piece.type} type={piece.type} color={piece.color}/>}
+    {piece&&<ChessPiece key={square+piece.color+piece.type} type={piece.type} color={piece.color}
+    className={lastMove?.to === square ? "last-move-piece" : ""}
+    style={lastMove?.to === square ? ({
+      "--piece-from-x": ((files.indexOf(lastMove.from[0]) - columnIndex) * 100) + "%",
+      "--piece-from-y": ((ranks.indexOf(Number(lastMove.from[1])) - rowIndex) * 100) + "%",
+    } as unknown as import("react").CSSProperties) : undefined}/>}
     {legal&&<span className={capture?"move-indicator move-capture":"move-indicator"}/>}
   </button>;
 }))}</div></div></div>
@@ -834,7 +844,12 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
                           onPointerUp={handlePointerUp} onPointerCancel={clearSelection}>
                           {columnIndex===0 && <span className="rank-coordinate">{rank}</span>}
                           {rowIndex===7 && <span className="file-coordinate">{file}</span>}
-                          {piece && <ChessPiece key={square + piece.color + piece.type} type={piece.type} color={piece.color}/>}
+                          {piece && <ChessPiece key={square + piece.color + piece.type} type={piece.type} color={piece.color}
+    className={lastMove?.to === square ? "last-move-piece" : ""}
+    style={lastMove?.to === square ? ({
+      "--piece-from-x": ((files.indexOf(lastMove.from[0]) - columnIndex) * 100) + "%",
+      "--piece-from-y": ((ranks.indexOf(Number(lastMove.from[1])) - rowIndex) * 100) + "%",
+    } as unknown as import("react").CSSProperties) : undefined}/>}
                           {legal && <span className={capture?"move-indicator move-capture":"move-indicator"}/>}
                         </button>
                       );
