@@ -10,7 +10,7 @@ type Task = "move" | "analysis" | null;
 type Analysis = { depth: number; evaluation: string; line: string[] };
 type Promotion = { from: Square; to: Square; color: Color };
 type Drag = { from: Square; x: number; y: number };
-type RemotePuzzle = { id:string; rating:number; plays:number; themes:string[]; solution:string[]; initialPly:number; gamePgn:string };
+type RemotePuzzle = { id:string; rating:number; plays:number; themes:string[]; solution:string[]; initialPly:number; gamePgn:string; fen:string };
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const ENGINE_URL = BASE_PATH + "/engine/stockfish-19-lite-single.js";
@@ -369,12 +369,14 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
       const sourceGame=new Chess(); sourceGame.loadPgn(pgn);
       const history=sourceGame.history({verbose:true});
       const initialPly=Math.max(0,Math.min(Number(puzzle.initialPly??0),history.length));
-      const position=new Chess();
-      for(const move of history.slice(0,initialPly)) position.move({from:move.from,to:move.to,...(move.promotion?{promotion:move.promotion}:{})});
+      const position=typeof puzzle.fen==="string" ? new Chess(puzzle.fen) : new Chess();
+      if(typeof puzzle.fen!=="string") {
+        for(const move of history.slice(0,initialPly)) position.move({from:move.from,to:move.to,...(move.promotion?{promotion:move.promotion}:{})});
+      }
       const solution=puzzle.solution as string[];
       const first=parseUci(solution[0]); if(!first) throw new Error("Invalid first puzzle move");
       gameRef.current=position; setGame(position);
-      setRemotePuzzle({id:String(puzzle.id),rating:Number(puzzle.rating??0),plays:Number(puzzle.plays??0),themes:Array.isArray(puzzle.themes)?puzzle.themes:[],solution,initialPly,gamePgn:pgn});
+      setRemotePuzzle({id:String(puzzle.id),rating:Number(puzzle.rating??0),plays:Number(puzzle.plays??0),themes:Array.isArray(puzzle.themes)?puzzle.themes:[],solution,initialPly,gamePgn:pgn,fen:position.fen()});
       setPuzzleTurnIndex(0); setPuzzleMessage("Find the best move for "+(position.turn()==="w"?"White":"Black")+".");
       setOrientation(position.turn()); setSelected(null); setPromotion(null); setAnalysis(null); refresh();
     } catch(error) {
@@ -395,9 +397,7 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
   }
   function resetCurrentPuzzle() {
     if(!remotePuzzle) { loadPuzzle(puzzleIndex); return; }
-    const source=new Chess(); source.loadPgn(remotePuzzle.gamePgn);
-    const history=source.history({verbose:true}); const next=new Chess();
-    for(const move of history.slice(0,remotePuzzle.initialPly)) next.move({from:move.from,to:move.to,...(move.promotion?{promotion:move.promotion}:{})});
+    const next=new Chess(remotePuzzle.fen);
     gameRef.current=next; setGame(next); setPuzzleTurnIndex(0); setPuzzleSolved(false); setPuzzleHintLevel(0);
     setPuzzleMessage("Find the best move."); setSelected(null); refresh();
   }
