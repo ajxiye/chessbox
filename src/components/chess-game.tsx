@@ -256,6 +256,10 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
                 const replyGame = gameRef.current;
                 replyGame.move({ from:reply.from, to:reply.to, ...(reply.promotion ? {promotion:reply.promotion} : {}) });
                 gameRef.current = replyGame; setGame(replyGame); refresh();
+                if (nextIndex + 1 >= remotePuzzle.solution.length) {
+                  setPuzzleSolved(true); setPuzzleCompletedCount(v=>v+1); setPuzzleStreak(v=>v+1);
+                  setPuzzleMessage("Correct! You found the full line.");
+                }
               } catch { setPuzzleMessage("The puzzle line could not continue. Load another puzzle."); }
             }, 420);
           } else {
