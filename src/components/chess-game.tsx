@@ -117,7 +117,7 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
   useEffect(() => { setScreen(initialScreen); }, [initialScreen]);
   useEffect(() => {
     const onPop = () => {
-      const route = window.location.pathname.replace(/\\/+$/, "").split("/").filter(Boolean).pop() ?? "";
+      const route = window.location.pathname.split("/").filter(Boolean).pop() ?? "";
       const known: Screen[] = ["play","puzzles","learn","analysis","live","community","more"];
       setScreen(known.includes(route as Screen) ? route as Screen : "home");
     };
