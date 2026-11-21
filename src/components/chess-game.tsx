@@ -335,7 +335,10 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
     const nextGame = new Chess();
     gameRef.current = nextGame;
     setGame(nextGame);
-    setScreen("play"); setSelected(null); setPromotion(null); setPuzzleSolved(false); setAnalysis(null); setCopyMessage("");
+    setScreen("play");
+    const playPath=BASE_PATH+"/play/";
+    if(window.location.pathname!==playPath) window.history.pushState({chessboxScreen:"play"},"",playPath);
+    setSelected(null); setPromotion(null); setPuzzleSolved(false); setAnalysis(null); setCopyMessage("");
     refresh();
   }
   function undoMove() {
@@ -411,7 +414,9 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
       const openingGame = new Chess();
       openingGame.loadPgn(pgn);
       stopEngineTask(); gameRef.current=openingGame; setGame(openingGame); setClockEnabled(false);
-      setScreen("play"); setMode("local"); setOrientation("w"); clearSelection(); setAnalysis(null); refresh();
+      setScreen("play");
+      window.history.pushState({chessboxScreen:"play"},"",BASE_PATH+"/play/");
+      setMode("local"); setOrientation("w"); clearSelection(); setAnalysis(null); refresh();
     } catch { setDataMessage("That opening line could not be loaded."); }
   }
   function runAnalysis() {
@@ -430,7 +435,7 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
   function loadFen() {
     try {
       const next = new Chess(fenInput.trim());
-      stopEngineTask(); gameRef.current=next; setGame(next); setScreen("analysis"); setMode("local");
+      stopEngineTask(); gameRef.current=next; setGame(next); openScreen("analysis"); setMode("local");
       clearSelection(); setAnalysis(null); setDataMessage("Position loaded successfully."); refresh();
     } catch { setDataMessage("That FEN is invalid. Check the position and try again."); }
   }
@@ -751,12 +756,12 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
           <div className="puzzles-page">
             <section className="puzzles-heading">
               <div className="puzzles-title-group"><div className="puzzles-title-icon">✣</div><div><h1>Puzzles</h1><p>Train your tactical vision with daily puzzles and more.</p></div></div>
-              <label className="puzzle-difficulty">Difficulty <select defaultValue="all" aria-label="Puzzle difficulty"><option value="all">All</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+              <span className="puzzle-difficulty">DAILY CHALLENGE</span>
             </section>
             <section className="puzzle-mode-row">
               <button className="puzzle-mode-card puzzle-mode-active" onClick={loadDailyPuzzle} type="button"><span className="puzzle-mode-icon">▦</span><span><b>Daily Puzzle</b><small>Today's Lichess puzzle</small></span><i>›</i></button>
-              <button className="puzzle-mode-card" onClick={loadDailyPuzzle} type="button"><span className="puzzle-mode-icon">▥</span><span><b>Puzzle Rush</b><small>Solve as many as you can</small></span><i>›</i></button>
-              <button className="puzzle-mode-card" onClick={loadDailyPuzzle} type="button"><span className="puzzle-mode-icon">◉</span><span><b>Puzzle Streak</b><small>Keep your streak alive</small></span><i>›</i></button>
+              <button className="puzzle-mode-card puzzle-mode-disabled" type="button" disabled><span className="puzzle-mode-icon">▥</span><span><b>Puzzle Rush</b><small>Coming soon</small></span><i>·</i></button>
+              <button className="puzzle-mode-card puzzle-mode-disabled" type="button" disabled><span className="puzzle-mode-icon">◉</span><span><b>Puzzle Streak</b><small>Coming soon</small></span><i>·</i></button>
             </section>
             <section className="puzzle-workspace">
               <div className="puzzle-main-card">
@@ -791,11 +796,10 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
               </div>
               <aside className="puzzle-side-column">
                 <section className="puzzle-stats-card"><h3>♜ &nbsp;Your Puzzle Stats</h3>
-                  <div className="puzzle-stat-grid"><div><b>{1247+puzzleCompletedCount*3}</b><small>Rating*</small></div><div><b>{puzzleCompletedCount?"76%":"72%"}</b><small>Accuracy*</small></div><div><b>{puzzleStreak}</b><small>Streak</small></div></div>
-                  <div className="puzzle-sparkline" aria-hidden="true"><svg viewBox="0 0 300 64"><path d="M2 53 L18 46 L29 49 L43 38 L57 41 L72 34 L86 36 L102 25 L119 30 L132 22 L148 27 L164 20 L181 24 L197 13 L213 19 L229 11 L244 15 L260 7 L278 9 L298 2" fill="none" stroke="currentColor" strokeWidth="2"/></svg></div><small className="puzzle-stat-footnote">*Local session estimate</small>
+                  <div className="puzzle-stat-grid"><div><b>{puzzleCompletedCount}</b><small>Solved</small></div><div><b>{puzzleStreak}</b><small>Streak</small></div><div><b>{puzzleRating}</b><small>Puzzle level</small></div></div><div className="puzzle-session-progress"><span style={{width:Math.min(100,puzzleCompletedCount*10)+"%"}} /></div><small className="puzzle-stat-footnote">Session stats on this visit</small>
                 </section>
                 <section className="puzzle-themes-card"><h3>★ &nbsp;Puzzle Themes</h3>
-                  {[["♛","Mate in 1","286 puzzles","#286f51"],["♟","Mate in 2","452 puzzles","#51378a"],["♚","Endgames","364 puzzles","#8b592f"],["↗","Tactics","781 puzzles","#285d91"]].map(([icon,title,count,color])=><button className="puzzle-theme-row" key={title} type="button" onClick={()=>void loadDailyPuzzle()}><span style={{background:color}}>{icon}</span><span><b>{title}</b><small>{count}</small></span><i>›</i></button>)}
+                  {[["♛","Mate in 1","#286f51"],["♟","Mate in 2","#51378a"],["♚","Endgames","#8b592f"],["↗","Tactics","#285d91"]].map(([icon,title,color])=><div className="puzzle-theme-row puzzle-theme-coming" key={title}><span style={{background:color}}>{icon}</span><span><b>{title}</b><small>Theme training · coming soon</small></span><i>·</i></div>)}
                 </section>
               </aside>
             </section>
