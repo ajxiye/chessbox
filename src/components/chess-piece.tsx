@@ -1,9 +1,11 @@
 import type { PieceSymbol, Color } from "chess.js";
+import type { CSSProperties } from "react";
 
 type ChessPieceProps = {
   type: PieceSymbol;
   color: Color;
   className?: string;
+  style?: CSSProperties;
 };
 
 /**
@@ -13,13 +15,14 @@ type ChessPieceProps = {
  */
 const LICHESS_PIECE_REVISION = "b27e1b4b0c1cd55dc3f6a33d6503d337315b2ba5";
 
-export function ChessPiece({ type, color, className = "" }: ChessPieceProps) {
+export function ChessPiece({ type, color, className = "", style }: ChessPieceProps) {
   const pieceCode = color + type.toUpperCase();
   const source = `https://raw.githubusercontent.com/lichess-org/lila/${LICHESS_PIECE_REVISION}/public/piece/cburnett/${pieceCode}.svg`;
 
   return (
     <img
       className={"chess-piece " + className}
+      style={style}
       src={source}
       alt=""
       aria-hidden="true"
