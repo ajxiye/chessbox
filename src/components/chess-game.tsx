@@ -801,7 +801,7 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
         {screen === "analysis" && (
           <div className="study-content">
             <section className="study-heading">
-              <div><span className="match-breadcrumb">CHESSBOX / {screen.toUpperCase()}</span><h1>{screen === "puzzles" ? "Find the move." : "Look a little deeper."}</h1></div>
+              <div><span className="match-breadcrumb">CHESSBOX / {screen.toUpperCase()}</span><h1>Look a little deeper.</h1></div>
               <button className="study-back-button" type="button" onClick={() => openScreen("home")}>← Home</button>
             </section>
             <div className="study-layout">
@@ -865,6 +865,19 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
                     <textarea id="pgn-input" className="data-input" rows={4} value={pgnInput} onChange={event=>setPgnInput(event.target.value)} placeholder="Paste a PGN game…"/>
                     <button className="secondary-button" type="button" onClick={loadPgn}>Load PGN</button>
                     {dataMessage && <p className="form-message">{dataMessage}</p>}
+                  </div>
+                  <div className="study-card annotation-guide">
+                    <div className="sidebar-section-label">MOVE ANNOTATIONS</div>
+                    <h2>Understand the symbols.</h2>
+                    <div className="annotation-grid">
+                      <div><span className="annotation-badge brilliant">!!</span><span><b>Brilliant</b><small>Exceptional move</small></span></div>
+                      <div><span className="annotation-badge great">!</span><span><b>Great</b><small>Strong move</small></span></div>
+                      <div><span className="annotation-badge good">!? </span><span><b>Interesting</b><small>Creative idea</small></span></div>
+                      <div><span className="annotation-badge inaccuracy">?!</span><span><b>Inaccuracy</b><small>Small loss of value</small></span></div>
+                      <div><span className="annotation-badge mistake">?</span><span><b>Mistake</b><small>Clear loss of value</small></span></div>
+                      <div><span className="annotation-badge blunder">??</span><span><b>Blunder</b><small>Major error</small></span></div>
+                    </div>
+                    <p className="annotation-note">These are standard chess annotation symbols. Automatic move-by-move grading requires comparing each position with engine evaluations.</p>
                   </div>
                 </>}
               </aside>
