@@ -28,3 +28,13 @@ ChessBox uses the CBurnett SVG piece artwork created by Colin M. L. Burnett. The
 - Full licence text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 
 The CBurnett artwork is a separately licensed asset set. This notice does not relicense the ChessBox application code. ChessBox does not use or copy the Chessground board implementation; its board layout and interaction code are maintained independently.
+
+
+## Lichess puzzle data
+
+ChessBox fetches the daily training puzzle from the public Lichess API at https://lichess.org/api/puzzle/daily. Lichess states that its puzzle collection is in the public domain and the downloadable puzzle database is released under CC0. Puzzle positions and metadata are displayed from that public API.
+
+- API documentation: https://lichess.org/api
+- Public puzzle database and CC0 notice: https://database.lichess.org/#puzzles
+
+ChessBox is independent and is not affiliated with Lichess.
