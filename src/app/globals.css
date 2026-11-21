@@ -1433,3 +1433,14 @@ select:focus-visible {
 .puzzle-board-frame .chess-piece{width:91%;height:91%}
 @media(max-width:1120px){.puzzle-workspace{grid-template-columns:minmax(0,1fr)}.puzzle-side-column{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:820px){.puzzles-page{padding:20px 14px 30px}.puzzles-heading{align-items:flex-start;flex-direction:column}.puzzles-title-icon{width:60px;height:60px;font-size:42px}.puzzle-mode-row{grid-template-columns:minmax(0,1fr);gap:10px}.puzzle-mode-card{min-height:76px}.puzzle-main-card{grid-template-columns:minmax(0,1fr);padding:14px}.puzzle-board-column{max-width:min(100%,620px)}.puzzle-details-column{padding:4px}.puzzle-side-column{grid-template-columns:minmax(0,1fr)}}
+
+.annotation-guide h2{margin:10px 0 16px;font-size:18px}
+.annotation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.annotation-grid>div{display:flex;align-items:center;gap:10px;min-width:0}
+.annotation-grid>div>span:last-child{display:grid;gap:3px}
+.annotation-grid b{font-size:12px}.annotation-grid small{color:var(--muted);font-size:10px}
+.annotation-badge{width:34px;height:34px;flex:0 0 auto;display:grid;place-items:center;border:1px solid #ffffff1c;border-radius:50%;font-size:12px;font-weight:800;animation:annotation-pop 2.8s ease-in-out infinite}
+.annotation-badge.brilliant{background:#245e49;color:#a6f1ca}.annotation-badge.great{background:#315b83;color:#c4e2ff}.annotation-badge.good{background:#65512c;color:#ffe2a0}.annotation-badge.inaccuracy{background:#6c5129;color:#ffd18a}.annotation-badge.mistake{background:#713c35;color:#ffc1b2}.annotation-badge.blunder{background:#762e38;color:#ffc0c8}
+@keyframes annotation-pop{0%,100%{transform:scale(1);box-shadow:0 0 0 0 #ffffff00}50%{transform:scale(1.06);box-shadow:0 0 0 4px #ffffff0b}}
+.annotation-note{margin:16px 0 0;color:var(--muted);font-size:11px;line-height:1.5}
+@media(prefers-reduced-motion:reduce){.annotation-badge{animation:none}}
