@@ -859,18 +859,7 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
                 {renderPlayer(orientation === "w" ? "w" : "b")}
               </div>
               <aside className="study-sidebar">
-                {screen==="puzzles" ? <>
-                  <div className="study-card">
-                    <div className="sidebar-section-label">TACTIC SET · {puzzleIndex+1}/{PUZZLES.length}</div>
-                    <h2>{currentPuzzle.title}</h2>
-                    <div className="puzzle-tags"><span>{currentPuzzle.theme}</span><span>{currentPuzzle.side} to move</span></div>
-                    <p className="puzzle-prompt">{puzzleMessage}</p>
-                    {puzzleSolved && <p className="puzzle-explanation">{currentPuzzle.explanation}</p>}
-                    <button className="primary-button" type="button" onClick={() => loadPuzzle(puzzleIndex+1)}>Next puzzle →</button>
-                    <button className="secondary-button" type="button" onClick={() => loadPuzzle(puzzleIndex)}>Restart puzzle</button>
-                  </div>
-                  <p className="study-disclaimer">Original ChessBox exercises. More puzzle sets and difficulty levels can be added as open data.</p>
-                </> : <>
+
                   <div className="study-card">
                     <div className="sidebar-section-label">STOCKFISH ANALYSIS</div>
                     <h2>{analysis ? analysis.evaluation : analysisBusy ? "Analysing…" : "Ready to analyse"}</h2>
@@ -902,7 +891,7 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
                     </div>
                     <p className="annotation-note">These are standard chess annotation symbols. Automatic move-by-move grading requires comparing each position with engine evaluations.</p>
                   </div>
-                </>}
+
               </aside>
             </div>
           </div>
