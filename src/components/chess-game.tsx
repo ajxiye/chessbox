@@ -10,6 +10,7 @@ type Task = "move" | "analysis" | null;
 type Analysis = { depth: number; evaluation: string; line: string[] };
 type Promotion = { from: Square; to: Square; color: Color };
 type Drag = { from: Square; x: number; y: number };
+type RemotePuzzle = { id:string; rating:number; plays:number; themes:string[]; solution:string[]; initialPly:number; gamePgn:string };
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const ENGINE_URL = BASE_PATH + "/engine/stockfish-19-lite-single.js";
@@ -85,6 +86,12 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
   const [puzzleIndex, setPuzzleIndex] = useState(0);
   const [puzzleSolved, setPuzzleSolved] = useState(false);
   const [puzzleMessage, setPuzzleMessage] = useState("Find the best move.");
+  const [remotePuzzle, setRemotePuzzle] = useState<RemotePuzzle | null>(null);
+  const [puzzleTurnIndex, setPuzzleTurnIndex] = useState(1);
+  const [puzzleLoading, setPuzzleLoading] = useState(false);
+  const [puzzleHintLevel, setPuzzleHintLevel] = useState(0);
+  const [puzzleCompletedCount, setPuzzleCompletedCount] = useState(0);
+  const [puzzleStreak, setPuzzleStreak] = useState(0);
   const [matchTab, setMatchTab] = useState<"moves" | "chat" | "info">("moves");
   const [searchQuery, setSearchQuery] = useState("");
   const [timeControlSeconds, setTimeControlSeconds] = useState(600);
@@ -99,7 +106,9 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
   const legalTargets = new Set(legalMoves.map((move) => move.to));
   const captureTargets = new Set(legalMoves.filter((move) => move.captured || move.isEnPassant()).map((move) => move.to));
   const checkedKing = game.isCheck() ? game.findPiece({ type:"k", color:game.turn() })[0] as Square | undefined : undefined;
-  const currentPuzzle = PUZZLES[puzzleIndex];
+  const currentPuzzle = PUZZLES[puzzleIndex % PUZZLES.length];
+  const puzzleRating = remotePuzzle?.rating ?? 1800;
+  const puzzleThemes = remotePuzzle?.themes ?? [currentPuzzle.theme];
   const refresh = useCallback(() => setRevision((value) => value + 1), []);
 
   useEffect(() => { setScreen(initialScreen); }, [initialScreen]);
@@ -219,7 +228,12 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
     if (gameOver || promotion || (screen === "play" && !isHumanTurn())) return false;
     if (screen === "puzzles") {
       if (puzzleSolved) return false;
-      if (from + to + (promotionPiece ?? "") !== currentPuzzle.solution) {
+      const expected = remotePuzzle?.solution[puzzleTurnIndex];
+      const expectedMove = expected ? parseUci(expected) : null;
+      const correct = remotePuzzle
+        ? Boolean(expectedMove && expectedMove.from === from && expectedMove.to === to && (expectedMove.promotion ?? "") === (promotionPiece ?? ""))
+        : from + to + (promotionPiece ?? "") === currentPuzzle.solution;
+      if (!correct) {
         setPuzzleMessage("Not quite. Look for the forcing move and try again.");
         setSelected(null);
         return false;
@@ -228,7 +242,28 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
     try {
       game.move({ from, to, ...(promotionPiece ? { promotion:promotionPiece } : {}) });
       setSelected(null); setPromotion(null); setAnalysis(null);
-      if (screen === "puzzles") { setPuzzleSolved(true); setPuzzleMessage("Puzzle solved. Great find!"); }
+      if (screen === "puzzles") {
+        if (remotePuzzle) {
+          const nextIndex = puzzleTurnIndex + 1;
+          if (nextIndex < remotePuzzle.solution.length) {
+            const reply = parseUci(remotePuzzle.solution[nextIndex]);
+            setPuzzleTurnIndex(nextIndex + 1);
+            if (reply) window.setTimeout(() => {
+              try {
+                const replyGame = gameRef.current;
+                replyGame.move({ from:reply.from, to:reply.to, ...(reply.promotion ? {promotion:reply.promotion} : {}) });
+                gameRef.current = replyGame; setGame(replyGame); refresh();
+              } catch { setPuzzleMessage("The puzzle line could not continue. Load another puzzle."); }
+            }, 420);
+          } else {
+            setPuzzleSolved(true); setPuzzleCompletedCount(v=>v+1); setPuzzleStreak(v=>v+1);
+            setPuzzleMessage("Correct! You found the full line.");
+          }
+        } else {
+          setPuzzleSolved(true); setPuzzleCompletedCount(v=>v+1); setPuzzleStreak(v=>v+1);
+          setPuzzleMessage("Puzzle solved. Great find!");
+        }
+      }
       refresh();
       return true;
     } catch { return false; }
@@ -303,26 +338,69 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
     clearSelection(); setAnalysis(null); refresh();
   }
   function loadPuzzle(index: number) {
-    const safeIndex = (index + PUZZLES.length) % PUZZLES.length;
-    const puzzle = PUZZLES[safeIndex];
+    const safeIndex=(index+PUZZLES.length)%PUZZLES.length;
+    const puzzle=PUZZLES[safeIndex];
     stopEngineTask();
-    const nextGame = new Chess(puzzle.fen);
-    gameRef.current = nextGame;
-    setGame(nextGame);
-    setPuzzleIndex(safeIndex); setPuzzleSolved(false);
-    setPuzzleMessage("Find the best move. " + puzzle.theme + ".");
-    setOrientation(puzzle.fen.split(" ")[1] === "b" ? "b" : "w");
+    const nextGame=new Chess(puzzle.fen);
+    gameRef.current=nextGame; setGame(nextGame); setRemotePuzzle(null); setPuzzleTurnIndex(1);
+    setPuzzleHintLevel(0); setPuzzleIndex(safeIndex); setPuzzleSolved(false);
+    setPuzzleMessage("Find the best move. "+puzzle.theme+".");
+    setOrientation(puzzle.fen.split(" ")[1]==="b"?"b":"w");
     setSelected(null); setPromotion(null); setAnalysis(null); refresh();
   }
+  async function loadDailyPuzzle() {
+    setPuzzleLoading(true); setPuzzleSolved(false); setPuzzleHintLevel(0);
+    setPuzzleMessage("Loading today's Lichess puzzle…"); stopEngineTask();
+    try {
+      const response=await fetch("https://lichess.org/api/puzzle/daily",{headers:{Accept:"application/json"},cache:"no-store"});
+      if(!response.ok) throw new Error("Lichess returned "+response.status);
+      const payload=await response.json(); const puzzle=payload.puzzle; const pgn=payload.game?.pgn;
+      if(!puzzle?.id||!Array.isArray(puzzle.solution)||!puzzle.solution.length||!pgn) throw new Error("Incomplete puzzle response");
+      const sourceGame=new Chess(); sourceGame.loadPgn(pgn);
+      const history=sourceGame.history({verbose:true});
+      const initialPly=Math.max(0,Math.min(Number(puzzle.initialPly??0),history.length));
+      const position=new Chess();
+      for(const move of history.slice(0,initialPly)) position.move({from:move.from,to:move.to,...(move.promotion?{promotion:move.promotion}:{})});
+      const solution=puzzle.solution as string[];
+      const first=parseUci(solution[0]); if(!first) throw new Error("Invalid first puzzle move");
+      position.move({from:first.from,to:first.to,...(first.promotion?{promotion:first.promotion}:{})});
+      gameRef.current=position; setGame(position);
+      setRemotePuzzle({id:String(puzzle.id),rating:Number(puzzle.rating??0),plays:Number(puzzle.plays??0),themes:Array.isArray(puzzle.themes)?puzzle.themes:[],solution,initialPly,gamePgn:pgn});
+      setPuzzleTurnIndex(1); setPuzzleMessage("Find the best move for "+(position.turn()==="w"?"White":"Black")+".");
+      setOrientation(position.turn()); setSelected(null); setPromotion(null); setAnalysis(null); refresh();
+    } catch(error) {
+      loadPuzzle(puzzleIndex);
+      setPuzzleMessage("The Lichess daily puzzle couldn't load. Here's a practice puzzle instead.");
+      setDataMessage(error instanceof Error?error.message:"Puzzle service unavailable");
+    } finally { setPuzzleLoading(false); }
+  }
+  function showPuzzleHint() {
+    if(!remotePuzzle) {
+      setPuzzleHintLevel(v=>Math.min(2,v+1));
+      setPuzzleMessage(puzzleHintLevel===0?"Hint: look for a forcing move.":"Hint: look for checks and captures first.");
+      return;
+    }
+    const expected=parseUci(remotePuzzle.solution[puzzleTurnIndex]); if(!expected) return;
+    setPuzzleHintLevel(v=>Math.min(2,v+1));
+    setPuzzleMessage(puzzleHintLevel===0?"Hint: the move starts from "+expected.from.toUpperCase()+".":"Hint: move from "+expected.from.toUpperCase()+" to "+expected.to.toUpperCase()+".");
+  }
+  function resetCurrentPuzzle() {
+    if(!remotePuzzle) { loadPuzzle(puzzleIndex); return; }
+    const source=new Chess(); source.loadPgn(remotePuzzle.gamePgn);
+    const history=source.history({verbose:true}); const next=new Chess();
+    for(const move of history.slice(0,remotePuzzle.initialPly)) next.move({from:move.from,to:move.to,...(move.promotion?{promotion:move.promotion}:{})});
+    const first=parseUci(remotePuzzle.solution[0]);
+    if(first) next.move({from:first.from,to:first.to,...(first.promotion?{promotion:first.promotion}:{})});
+    gameRef.current=next; setGame(next); setPuzzleTurnIndex(1); setPuzzleSolved(false); setPuzzleHintLevel(0);
+    setPuzzleMessage("Find the best move."); setSelected(null); refresh();
+  }
   function openScreen(next: Screen) {
-    stopEngineTask();
-    clearSelection();
-    setScreen(next);
-    const slug = next === "home" ? "" : next;
-    const path = BASE_PATH + (slug ? "/" + slug + "/" : "/");
-    if (window.location.pathname !== path) window.history.pushState({ chessboxScreen: next }, "", path);
-    if (next === "puzzles") loadPuzzle(puzzleIndex);
-    if (next === "play" && game.isGameOver()) startNewGame(mode, timeControlSeconds);
+    stopEngineTask(); clearSelection(); setScreen(next);
+    const slug=next==="home"?"":next;
+    const path=BASE_PATH+(slug?"/"+slug+"/":"/");
+    if(window.location.pathname!==path) window.history.pushState({chessboxScreen:next},"",path);
+    if(next==="puzzles") void loadDailyPuzzle();
+    if(next==="play"&&game.isGameOver()) startNewGame(mode,timeControlSeconds);
   }
   function loadOpening(pgn: string) {
     try {
