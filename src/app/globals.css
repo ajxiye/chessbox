@@ -1450,3 +1450,11 @@ select:focus-visible {
 .puzzle-session-progress span{display:block;height:100%;border-radius:inherit;background:#91b7a0;transition:width 300ms ease}
 .puzzle-theme-coming{cursor:default;opacity:.82}.puzzle-theme-coming:hover{background:none}
 .puzzle-stat-grid{gap:0}
+
+@keyframes cb-piece-slide {
+  0% { opacity:.82; transform:translate(var(--piece-from-x),var(--piece-from-y)) scale(.92); filter:brightness(1.12); }
+  72% { opacity:1; transform:translate(0,0) scale(1.035); filter:brightness(1.04); }
+  100% { opacity:1; transform:translate(0,0) scale(1); filter:none; }
+}
+.chess-piece.last-move-piece { animation:cb-piece-slide 280ms cubic-bezier(.18,.78,.22,1) both; will-change:transform,opacity; }
+@media(prefers-reduced-motion:reduce){.chess-piece.last-move-piece{animation:none}}
