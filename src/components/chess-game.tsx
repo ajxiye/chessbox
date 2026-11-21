@@ -112,10 +112,6 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
   const refresh = useCallback(() => setRevision((value) => value + 1), []);
 
   useEffect(() => {
-    if (screen === "puzzles" && !remotePuzzle && !puzzleLoading) void loadDailyPuzzle();
-  }, [screen]);
-  useEffect(() => { setScreen(initialScreen); }, [initialScreen]);
-  useEffect(() => {
     const onPop = () => {
       const route = window.location.pathname.split("/").filter(Boolean).pop() ?? "";
       const known: Screen[] = ["play","puzzles","learn","analysis","live","community","more"];
@@ -401,6 +397,10 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
     gameRef.current=next; setGame(next); setPuzzleTurnIndex(0); setPuzzleSolved(false); setPuzzleHintLevel(0);
     setPuzzleMessage("Find the best move."); setSelected(null); refresh();
   }
+  useEffect(() => {
+    if (initialScreen === "puzzles") void loadDailyPuzzle();
+  }, [initialScreen]);
+
   function openScreen(next: Screen) {
     stopEngineTask(); clearSelection(); setScreen(next);
     const slug=next==="home"?"":next;
@@ -794,7 +794,7 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
 }))}</div></div></div>
                 <div className="puzzle-details-column">
                   <span className="puzzle-mate-pill">{(puzzleThemes[0]??"Daily challenge").replaceAll("_"," ")}</span>
-                  <h2>{puzzleLoading?"Loading today's puzzle…":puzzleSolved?"Excellent find!":"Find the best move for "+(game.turn()==="w"?"White":"Black")+"."}</h2>
+                  <h2>{puzzleLoading?"Loading today&apos;s puzzle…":puzzleSolved?"Excellent find!":"Find the best move for "+(game.turn()==="w"?"White":"Black")+"."}</h2>
                   <p className="puzzle-status" role="status">{puzzleMessage}</p>
                   <div className="puzzle-rating-row"><span>▥</span> Rating: {puzzleRating}{remotePuzzle?" · "+remotePuzzle.plays.toLocaleString()+" plays":""}</div>
                   {puzzleHintLevel>0&&<div className="puzzle-hint-panel">Hint {puzzleHintLevel}/2 · {puzzleMessage}</div>}
