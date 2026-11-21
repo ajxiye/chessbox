@@ -743,7 +743,62 @@ export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Scre
           </div>
         )}
 
-        {(screen === "puzzles" || screen === "analysis") && (
+        {screen === "puzzles" && (
+          <div className="puzzles-page">
+            <section className="puzzles-heading">
+              <div className="puzzles-title-group"><div className="puzzles-title-icon">✣</div><div><h1>Puzzles</h1><p>Train your tactical vision with daily puzzles and more.</p></div></div>
+              <label className="puzzle-difficulty">Difficulty <select defaultValue="all" aria-label="Puzzle difficulty"><option value="all">All</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+            </section>
+            <section className="puzzle-mode-row">
+              <button className="puzzle-mode-card puzzle-mode-active" onClick={loadDailyPuzzle} type="button"><span className="puzzle-mode-icon">▦</span><span><b>Daily Puzzle</b><small>Today's Lichess puzzle</small></span><i>›</i></button>
+              <button className="puzzle-mode-card" onClick={loadDailyPuzzle} type="button"><span className="puzzle-mode-icon">▥</span><span><b>Puzzle Rush</b><small>Solve as many as you can</small></span><i>›</i></button>
+              <button className="puzzle-mode-card" onClick={loadDailyPuzzle} type="button"><span className="puzzle-mode-icon">◉</span><span><b>Puzzle Streak</b><small>Keep your streak alive</small></span><i>›</i></button>
+            </section>
+            <section className="puzzle-workspace">
+              <div className="puzzle-main-card">
+                <div className="puzzle-board-column"><div className="board-frame puzzle-board-frame"><div className="board-grid" role="group" aria-label="Daily chess puzzle board">{ranks.map((rank,rowIndex) => files.map((file,columnIndex) => {
+  const square=(file+rank) as Square; const piece=game.get(square);
+  const light=(file.charCodeAt(0)-97+rank)%2===0;
+  const last=lastMove?.from===square||lastMove?.to===square;
+  const legal=legalTargets.has(square); const capture=captureTargets.has(square); const checked=checkedKing===square;
+  return <button key={square} type="button" data-square={square}
+    className={["board-square",light?"square-light":"square-dark",last?"square-last-move":"",selected===square?"square-selected":"",checked?"square-check":""].filter(Boolean).join(" ")}
+    aria-label={square+", "+(piece?sideName(piece.color)+" "+pieceName(piece.type):"empty")}
+    onClick={()=>{if(suppressClickRef.current){suppressClickRef.current=false;return;}handleSquareClick(square);}}
+    onPointerDown={event=>handlePointerDown(event,square)} onPointerMove={handlePointerMove}
+    onPointerUp={handlePointerUp} onPointerCancel={clearSelection}>
+    {columnIndex===0&&<span className="rank-coordinate">{rank}</span>}
+    {rowIndex===7&&<span className="file-coordinate">{file}</span>}
+    {piece&&<ChessPiece key={square+piece.color+piece.type} type={piece.type} color={piece.color}/>}
+    {legal&&<span className={capture?"move-indicator move-capture":"move-indicator"}/>}
+  </button>;
+}))}</div></div></div>
+                <div className="puzzle-details-column">
+                  <span className="puzzle-mate-pill">{(puzzleThemes[0]??"Daily challenge").replaceAll("_"," ")}</span>
+                  <h2>{puzzleLoading?"Loading today's puzzle…":puzzleSolved?"Excellent find!":"Find the best move for "+(game.turn()==="w"?"White":"Black")+"."}</h2>
+                  <p className="puzzle-status" role="status">{puzzleMessage}</p>
+                  <div className="puzzle-rating-row"><span>▥</span> Rating: {puzzleRating}{remotePuzzle?" · "+remotePuzzle.plays.toLocaleString()+" plays":""}</div>
+                  {puzzleHintLevel>0&&<div className="puzzle-hint-panel">Hint {puzzleHintLevel}/2 · {puzzleMessage}</div>}
+                  <button className="puzzle-start-button" type="button" onClick={()=>puzzleSolved?void loadDailyPuzzle():showPuzzleHint()} disabled={puzzleLoading}>{puzzleSolved?"Next puzzle":"♧  Hint"}</button>
+                  <button className="puzzle-action-button" type="button" onClick={showPuzzleHint} disabled={puzzleLoading||puzzleSolved}>♧  Show hint</button>
+                  <button className="puzzle-action-button" type="button" onClick={resetCurrentPuzzle} disabled={puzzleLoading}>↻  Reset</button>
+                  <div className="puzzle-source-note">Puzzle data from Lichess · CC0 public puzzle database</div>
+                </div>
+              </div>
+              <aside className="puzzle-side-column">
+                <section className="puzzle-stats-card"><h3>♜ &nbsp;Your Puzzle Stats</h3>
+                  <div className="puzzle-stat-grid"><div><b>{1247+puzzleCompletedCount*3}</b><small>Rating*</small></div><div><b>{puzzleCompletedCount?"76%":"72%"}</b><small>Accuracy*</small></div><div><b>{puzzleStreak}</b><small>Streak</small></div></div>
+                  <div className="puzzle-sparkline" aria-hidden="true"><svg viewBox="0 0 300 64"><path d="M2 53 L18 46 L29 49 L43 38 L57 41 L72 34 L86 36 L102 25 L119 30 L132 22 L148 27 L164 20 L181 24 L197 13 L213 19 L229 11 L244 15 L260 7 L278 9 L298 2" fill="none" stroke="currentColor" strokeWidth="2"/></svg></div><small className="puzzle-stat-footnote">*Local session estimate</small>
+                </section>
+                <section className="puzzle-themes-card"><h3>★ &nbsp;Puzzle Themes</h3>
+                  {[["♛","Mate in 1","286 puzzles","#286f51"],["♟","Mate in 2","452 puzzles","#51378a"],["♚","Endgames","364 puzzles","#8b592f"],["↗","Tactics","781 puzzles","#285d91"]].map(([icon,title,count,color])=><button className="puzzle-theme-row" key={title} type="button" onClick={()=>void loadDailyPuzzle()}><span style={{background:color}}>{icon}</span><span><b>{title}</b><small>{count}</small></span><i>›</i></button>)}
+                </section>
+              </aside>
+            </section>
+          </div>
+        )}
+
+        {screen === "analysis" && (
           <div className="study-content">
             <section className="study-heading">
               <div><span className="match-breadcrumb">CHESSBOX / {screen.toUpperCase()}</span><h1>{screen === "puzzles" ? "Find the move." : "Look a little deeper."}</h1></div>
