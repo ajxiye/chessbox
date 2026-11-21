@@ -1444,3 +1444,9 @@ select:focus-visible {
 @keyframes annotation-pop{0%,100%{transform:scale(1);box-shadow:0 0 0 0 #ffffff00}50%{transform:scale(1.06);box-shadow:0 0 0 4px #ffffff0b}}
 .annotation-note{margin:16px 0 0;color:var(--muted);font-size:11px;line-height:1.5}
 @media(prefers-reduced-motion:reduce){.annotation-badge{animation:none}}
+
+.puzzle-mode-disabled{opacity:.58;cursor:not-allowed}.puzzle-mode-disabled:hover{transform:none;border-color:transparent}
+.puzzle-session-progress{height:5px;margin-top:20px;overflow:hidden;border-radius:10px;background:#ffffff12}
+.puzzle-session-progress span{display:block;height:100%;border-radius:inherit;background:#91b7a0;transition:width 300ms ease}
+.puzzle-theme-coming{cursor:default;opacity:.82}.puzzle-theme-coming:hover{background:none}
+.puzzle-stat-grid{gap:0}
