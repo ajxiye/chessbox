@@ -38,3 +38,13 @@ ChessBox fetches the daily training puzzle from the public Lichess API at https:
 - Public puzzle database and CC0 notice: https://database.lichess.org/#puzzles
 
 ChessBox is independent and is not affiliated with Lichess.
+
+
+## Lichess puzzle data
+
+ChessBox fetches the daily training puzzle from the public Lichess API at https://lichess.org/api/puzzle/daily. Lichess states that its puzzle collection is in the public domain and the downloadable puzzle database is released under CC0. Puzzle positions and metadata are displayed from that public API.
+
+- API documentation: https://lichess.org/api
+- Public puzzle database and CC0 notice: https://database.lichess.org/#puzzles
+
+ChessBox is independent and is not affiliated with Lichess.
