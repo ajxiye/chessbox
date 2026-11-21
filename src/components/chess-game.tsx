@@ -54,7 +54,7 @@ function parseUci(value: string) {
   return { from:value.slice(0,2) as Square, to:value.slice(2,4) as Square, promotion:value[4] as PieceSymbol | undefined };
 }
 
-export function ChessPlatform() {
+export function ChessPlatform({ initialScreen = "home" }: { initialScreen?: Screen }) {
   const [game, setGame] = useState(() => new Chess());
   const gameRef = useRef(game);
   const workerRef = useRef<Worker | null>(null);
@@ -65,7 +65,7 @@ export function ChessPlatform() {
   const dragRef = useRef<{ from: Square; pointerId: number } | null>(null);
 
   const [revision, setRevision] = useState(0);
-  const [screen, setScreen] = useState<Screen>("home");
+  const [screen, setScreen] = useState<Screen>(initialScreen);
   const [mode, setMode] = useState<"computer" | "local">("computer");
   const [humanColor, setHumanColor] = useState<Color>("w");
   const [skill, setSkill] = useState(8);
@@ -101,6 +101,17 @@ export function ChessPlatform() {
   const checkedKing = game.isCheck() ? game.findPiece({ type:"k", color:game.turn() })[0] as Square | undefined : undefined;
   const currentPuzzle = PUZZLES[puzzleIndex];
   const refresh = useCallback(() => setRevision((value) => value + 1), []);
+
+  useEffect(() => { setScreen(initialScreen); }, [initialScreen]);
+  useEffect(() => {
+    const onPop = () => {
+      const route = window.location.pathname.replace(/\\/+$/, "").split("/").filter(Boolean).pop() ?? "";
+      const known: Screen[] = ["play","puzzles","learn","analysis","live","community","more"];
+      setScreen(known.includes(route as Screen) ? route as Screen : "home");
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   useEffect(() => {
     if (screen !== "play" || !clockEnabled || gameOver) return;
@@ -307,6 +318,9 @@ export function ChessPlatform() {
     stopEngineTask();
     clearSelection();
     setScreen(next);
+    const slug = next === "home" ? "" : next;
+    const path = BASE_PATH + (slug ? "/" + slug + "/" : "/");
+    if (window.location.pathname !== path) window.history.pushState({ chessboxScreen: next }, "", path);
     if (next === "puzzles") loadPuzzle(puzzleIndex);
     if (next === "play" && game.isGameOver()) startNewGame(mode, timeControlSeconds);
   }
